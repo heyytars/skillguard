@@ -125,7 +125,7 @@ npx skillguard scan ./my-project
 ```bash
 # Clone the repository
 git clone https://github.com/heyytars/skillguard.git
-cd skillgaurd
+cd skillguard
 
 # Install dependencies
 npm install
