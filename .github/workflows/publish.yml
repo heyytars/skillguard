@@ -1,8 +1,14 @@
 name: Publish Package
 
+# Publishes via npm Trusted Publishing (OIDC). No NPM_TOKEN secret needed.
+# Requires the Trusted Publisher set on npmjs.com:
+#   owner heyytars, repo skillguard, workflow publish.yml
+# No untrusted event input is used in any run: step.
+
 on:
   release:
-    types: [created]
+    types: [published]
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -15,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '24.x'
           registry-url: 'https://registry.npmjs.org/'
 
       - run: npm ci
@@ -26,8 +32,6 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Show npm debug log on failure
         if: failure()
