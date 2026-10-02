@@ -1,0 +1,15 @@
+# Changelog
+
+## 2.0.7 (2026-10-02)
+
+- Fixed: scanning a relative path like `../my-skill` hung forever
+  (config lookup never reached the filesystem root).
+- Fixed: `--version` and `skillguard version` now report the real version.
+- Distribution moved off the npm registry. Install with Homebrew
+  (`brew install heyytars/tap/skillguard`) or from GitHub Releases.
+- Project moved to `github.com/heyytars/skillguard`.
+
+## 2.0.0 (2026-02-04)
+
+- Multi-language analyzers (JS/TS, Python, Java, Go, Ruby, PHP, C/C++, Rust),
+  threat categories, configurable scoring. Last version published to npm.

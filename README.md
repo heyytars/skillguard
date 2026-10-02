@@ -426,6 +426,7 @@ skillguard/
 │   ├── types.ts                      # TypeScript type definitions
 │   ├── vulnerabilities.ts            # Vulnerability patterns
 │   ├── config.ts                     # Configuration management
+│   ├── __tests__/                    # Jest tests
 │   └── analyzers/                    # Language-specific analyzers
 │       ├── javascript.analyzer.ts    # JS/TS (43 patterns)
 │       ├── python.analyzer.ts        # Python (38 patterns)
@@ -436,6 +437,10 @@ skillguard/
 │       ├── cpp.analyzer.ts           # C/C++ (30 patterns)
 │       └── rust.analyzer.ts          # Rust (28 patterns)
 ├── examples/                         # Sample files for testing
+├── scripts/
+│   └── release.sh                    # GitHub Release + Homebrew release
+├── PUBLISHING.md                     # How to cut a release
+├── CHANGELOG.md
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -453,12 +458,10 @@ skillguard scan ./path/to/skill --json
 
 ```yaml
 - name: Security Scan
+  # Exits 1 when the risk level is HIGH or CRITICAL, which fails this step.
   run: |
-    npx -y https://github.com/heyytars/skillguard/releases/latest/download/skillguard.tgz scan ./skills/my-skill --json > scan-results.json
-    if [ $? -eq 1 ]; then
-      echo "Security scan failed!"
-      exit 1
-    fi
+    npx -y https://github.com/heyytars/skillguard/releases/latest/download/skillguard.tgz \
+      scan ./skills/my-skill --json > scan-results.json
 ```
 
 ## 🛠️ Development
@@ -488,13 +491,7 @@ npm run format
 - **Code Injection**: `eval()`, dynamic imports, reflection abuse
 - **Data Exfiltration**: Suspicious network requests, file uploads
 - **Privilege Escalation**: File permission changes, unsafe operations
-- **Supply Chain**: 1000+ CVEs detected via npm audit and OSV integration
-
-### Trusted By
-- AI Agent Developers building MCP servers
-- Claude Code skill creators
-- Enterprise teams deploying custom AI agents
-- Security researchers analyzing AI marketplaces
+- **Supply Chain**: Known vulnerable dependencies, checked live against npm audit and the OSV database
 
 ## 📈 Roadmap
 
@@ -516,12 +513,12 @@ npm run format
 | Bandit | ❌ Python only | ❌ Generic | ⚠️ Limited | ✅ Yes | ⚠️ Basic |
 
 **Why choose SkillGuard?**
-- Only tool designed specifically for AI agent security
-- Fastest multi-language scanning (< 10ms for most projects)
+- Built specifically for AI agent skills, across 9 languages
+- Fast: code analysis runs in milliseconds; dependency checks add about a second when a `package.json` is present
 - Zero-config with powerful customization when needed
 - Beautiful, actionable output developers actually want to use
 
-## � License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
@@ -538,7 +535,7 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct]
 ## 💬 Community & Support
 
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/heyytars/skillguard/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/heyytars/skillguard/discussions)
+- 💡 **Feature Requests**: [GitHub Issues](https://github.com/heyytars/skillguard/issues/new)
 - 📖 **Documentation**: [CONFIGURATION.md](CONFIGURATION.md)
 - 🍺 **Homebrew**: [heyytars/tap](https://github.com/heyytars/homebrew-tap)
 

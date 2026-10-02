@@ -83,7 +83,7 @@ program
   .description('Show version information')
   .action(() => {
     showLogo();
-    showInfo('SkillGuard v1.0.0');
+    showInfo(`SkillGuard v${version}`);
   });
 
 // Parse arguments
