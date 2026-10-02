@@ -61,7 +61,7 @@ so the attacker can argue it down.
 | Rule-based detection, same disguised set | **8/8** |
 
 The rules were the better detector on every measure. The spike's real value was
-finding the two scoring holes it exposed, which are fixed in 2.3.0.
+finding the two scoring holes it exposed, which are fixed in 2.4.0.
 
 ## If we ever ship it
 

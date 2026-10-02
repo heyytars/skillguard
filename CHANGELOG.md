@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.0 (2026-10-02)
+## 2.4.0 (2026-10-02)
 
 - **Shipped a benchmark.** `bench/run.py` measures detection and false alarms
   against 35 labelled fixtures, with third-party corpora fetched at pinned
