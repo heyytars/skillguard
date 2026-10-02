@@ -110,14 +110,20 @@ skillguard scan ./agent-marketplace --json > analysis.json
 
 ## 📦 Installation
 
-### Via npm (Recommended)
+### Straight from GitHub (latest)
 
 ```bash
-# Install globally
-npm install -g skillguard
+# Run without installing
+npx github:heyytars/skillguard scan ./my-project
 
-# Or use with npx (no installation)
-npx skillguard scan ./my-project
+# Or install globally
+npm install -g github:heyytars/skillguard
+```
+
+### Via npm
+
+```bash
+npm install -g skillguard
 ```
 
 ### From Source
