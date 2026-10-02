@@ -132,11 +132,7 @@ skillguard scan ./my-project
 npm install -g github:heyytars/skillguard
 ```
 
-### Via npm (older version)
-
-```bash
-npm install -g skillguard
-```
+> The old `skillguard` package on the npm registry is deprecated. Use one of the options above.
 
 ### From Source
 
