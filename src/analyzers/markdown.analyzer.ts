@@ -128,6 +128,17 @@ const MARKDOWN_RULES: MarkdownRule[] = [
 
   // ── Credential theft & exfiltration ─────────────────────────────────────
   {
+    name: 'prose-exfiltration',
+    severity: 'critical',
+    category: 'Data Exfiltration',
+    description:
+      'Tells the agent, in plain words, to send a credential or .env file to a web address.',
+    pattern: new RegExp(
+      String.raw`\b(?:upload|send|post|exfiltrate|forward|transmit|sync|copy|beacon)\b[^\n]{0,40}?${SECRET_OR_ENV}[^\n]{0,60}?\b(?:to|at|into)\s+(?:https?:\/\/|[\w-]+\.[\w.-]+\/)`,
+      'i',
+    ),
+  },
+  {
     name: 'secret-exfiltration',
     severity: 'critical',
     category: 'Data Exfiltration',
@@ -269,6 +280,15 @@ const MARKDOWN_RULES: MarkdownRule[] = [
 
   // ── Persistence & destruction ───────────────────────────────────────────
   {
+    name: 'memory-trust-injection',
+    severity: 'critical',
+    category: 'Persistence',
+    description:
+      'Writes a standing order into the agent\'s memory or instruction files ("always trust ...", "ignore ...", "never ask ..."). That changes how the agent behaves in every future session.',
+    pattern:
+      /\b(?:always|never|ignore|trust|allow|auto-?approve|skip|do\s+not\s+(?:ask|tell|warn))\b[^\n>]*(?:>>?|\btee\s+(?:-a\s+)?)\s*["']?[^\s"'|]*(?:MEMORY\.md|SOUL\.md|CLAUDE\.md|AGENTS\.md|GEMINI\.md|\.cursorrules|\.windsurfrules|copilot-instructions\.md)\b/i,
+  },
+  {
     name: 'agent-memory-write',
     severity: 'high',
     category: 'Persistence',
@@ -334,18 +354,50 @@ export class MarkdownAnalyzer implements LanguageAnalyzer {
  * warning from the attack trains people to ignore it.
  */
 const NEGATION =
-  /\b(?:do\s+not|don'?t|never|avoid|instead\s+of|not\s+allowed|must\s+not|should\s+not|shouldn'?t|blocked|refuse|disallow)\b/i;
+  /\b(?:do\s+not|don'?t|never|avoid|instead\s+of|not\s+allowed|must\s+not|should\s+not|shouldn'?t|blocked|refuse|disallow)\b/gi;
 
 /**
- * True when a warning sits close to the match. Prose wraps, so the lookback
- * reaches about two lines back ("Never run ... `security dump-keychain`");
- * forward check stays short. A warning only ever lowers a finding to
- * informational, it never hides it: each occurrence is judged on its own.
+ * An order to run something. If one follows the warning, the warning was a
+ * disguise ("documentation only ... before first use, run the setup step").
+ */
+const IMPERATIVE =
+  /\b(?:now|must\s+(?:now\s+)?(?:run|execute|apply|paste)|please\s+(?:run|apply|execute|paste)|make\s+sure\s+to|be\s+sure\s+to|go\s+ahead|before\s+first\s+use|to\s+finish|(?:run|execute|paste|apply)\s+(?:it|this|these|the\s+following|the\s+setup|the\s+command|once))\b|\bagent\s*:/i;
+
+/**
+ * Rules whose meaning depends on context: naming the command is often how a
+ * skill explains or forbids it. Only these may be softened by a nearby warning.
+ * Everything else (paste sites, decode-and-run, exfiltration, hiding things
+ * from the user, memory writes) is evidence on its own and is never softened.
+ */
+const SOFTENABLE = new Set([
+  'pipe-to-shell',
+  'shell-from-download',
+  'download-then-execute',
+  'credential-file-access',
+  'keychain-dump',
+  'remove-quarantine',
+  'skip-agent-permissions',
+]);
+
+/**
+ * True when a warning governs the match. Prose wraps, so the lookback reaches
+ * about two lines; the forward check stays short ("`curl | sh` is blocked").
+ * A warning followed by an order to run something does not count.
  */
 function isNegated(line: string, index: number, length: number, proseBefore: string): boolean {
   const context = `${proseBefore} ${line.slice(0, index)}`.slice(-240);
   const after = line.slice(index + length, index + length + 60);
-  return NEGATION.test(context) || NEGATION.test(after);
+
+  let lastNegation = -1;
+  for (const m of context.matchAll(NEGATION)) lastNegation = m.index ?? lastNegation;
+  if (lastNegation >= 0) {
+    // Skip the warning's own verb ("never run a command ...").
+    const afterWarning = context.slice(lastNegation).replace(/^\S+(?:\s+not)?\s+\S+/, '');
+    if (!IMPERATIVE.test(afterWarning)) return true;
+  }
+  NEGATION.lastIndex = 0;
+  const forward = new RegExp(NEGATION.source, 'i').test(after);
+  return forward && !IMPERATIVE.test(after);
 }
 
 /** Analyze markdown text directly (exported for tests). */
@@ -436,14 +488,19 @@ export function analyzeMarkdown(source: string, filePath: string): Finding[] {
       }
       const snippet = rule.redact ? line.replace(m[0], redact(m[0])) : line;
       // A doc that says "do not run curl | bash" is teaching, not attacking.
-      // It is still reported, just as information instead of a verdict.
-      if (rule.severity !== 'low' && isNegated(line, m.index, m[0].length, proseBefore)) {
+      // Only context-dependent rules soften, and only to MEDIUM: still a
+      // review item, never a pass.
+      if (
+        SOFTENABLE.has(rule.name) &&
+        (rule.severity === 'high' || rule.severity === 'critical') &&
+        isNegated(line, m.index, m[0].length, proseBefore)
+      ) {
         add(
           {
             name: rule.name,
-            severity: 'low',
+            severity: 'medium',
             category: rule.category,
-            description: `${rule.description} Appears next to a warning about it, so this is informational.`,
+            description: `${rule.description} Appears next to a warning against it, so it is shown for review rather than as a verdict.`,
           },
           i,
           m.index,

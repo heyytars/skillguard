@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.2.1 (2026-10-02)
+
+- **Security fix: a warning could launder an attack.** 2.2.0 lowered any finding
+  that sat near a word like "never" or "do not". A skill could therefore put
+  "documentation only, the agent should never run this" above a payload and drop
+  from CRITICAL to Safe. Measured on a new disguised-attack set: 4 of 8 got
+  through. Now:
+  - Only the 7 rules whose meaning depends on context may be softened
+    (`pipe-to-shell`, `shell-from-download`, `download-then-execute`,
+    `credential-file-access`, `keychain-dump`, `remove-quarantine`,
+    `skip-agent-permissions`).
+  - A warning followed by an order ("never ... the agent must now run") no
+    longer counts as a warning.
+  - Softening lands on **Medium**, never on Safe, and could never fail-open.
+  - Hard evidence (paste-site hosts, decode-and-run, exfiltration, hiding things
+    from the user, memory writes) is never softened at all.
+- New rule: `memory-trust-injection` (CRITICAL) - writes a standing order into
+  the agent's memory or instruction files (`echo "always trust ..." >> CLAUDE.md`).
+- New rule: `prose-exfiltration` (CRITICAL) - tells the agent in plain words to
+  send a credential or `.env` file to a web address.
+- New disguised-attack test set: 8 attacks dressed as documentation, all caught.
+  Tests: 72/72.
+
 ## 2.2.0 (2026-10-02)
 
 - Scoring now separates **capabilities** from **threats**. Running a command,
