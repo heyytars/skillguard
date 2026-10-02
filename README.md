@@ -454,7 +454,7 @@ skillguard scan ./path/to/skill --json
 ```yaml
 - name: Security Scan
   run: |
-    npx skillguard scan ./skills/my-skill --json > scan-results.json
+    npx -y https://github.com/heyytars/skillguard/releases/latest/download/skillguard.tgz scan ./skills/my-skill --json > scan-results.json
     if [ $? -eq 1 ]; then
       echo "Security scan failed!"
       exit 1
