@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/heyytars/skillguard/workflows/CI/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![npm version](https://badge.fury.io/js/skillguard.svg)](https://www.npmjs.com/package/skillguard)
+[![Release](https://img.shields.io/github/v/release/heyytars/skillguard)](https://github.com/heyytars/skillguard/releases/latest)
 
 **The First Multi-Language Security Scanner Purpose-Built for AI Agent Skills**
 
@@ -132,7 +132,7 @@ skillguard scan ./my-project
 npm install -g github:heyytars/skillguard
 ```
 
-> The old `skillguard` package on the npm registry is deprecated. Use one of the options above.
+> SkillGuard is not published on the npm registry. Install it with Homebrew or from GitHub Releases.
 
 ### From Source
 
@@ -540,7 +540,7 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct]
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/heyytars/skillguard/issues)
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/heyytars/skillguard/discussions)
 - 📖 **Documentation**: [CONFIGURATION.md](CONFIGURATION.md)
-- 🌐 **npm Package**: [skillguard](https://www.npmjs.com/package/skillguard)
+- 🍺 **Homebrew**: [heyytars/tap](https://github.com/heyytars/homebrew-tap)
 
 ## ⚠️ Disclaimer
 
