@@ -110,7 +110,13 @@ skillguard scan ./agent-marketplace --json > analysis.json
 
 ## 📦 Installation
 
-### From GitHub Releases (recommended)
+### Homebrew (macOS / Linux)
+
+```bash
+brew install heyytars/tap/skillguard
+```
+
+### From GitHub Releases
 
 ```bash
 # Install globally (always the latest release)
