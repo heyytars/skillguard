@@ -116,7 +116,7 @@ skillguard scan ./examples
 
 ### Reading the score
 
-Each finding adds points based on how dangerous it is. The total is capped at 100.
+Each finding adds points based on how dangerous it is. The total is capped at 100. Capabilities (running commands, writing files, calling APIs) are capped at 30 points, so only patterns that mean harm can push a skill into High or Critical.
 
 | Score | Verdict | What to do |
 |---|---|---|
@@ -127,28 +127,44 @@ Each finding adds points based on how dangerous it is. The total is capped at 10
 | 76 to 100 | 🔴 Critical | Don't install |
 
 <details>
-<summary>How the points add up</summary>
+<summary>How the score is worked out</summary>
 
-Every code finding adds the higher of two numbers: its **category weight** or its **severity weight**. Dependency findings add their severity weight.
+Findings come in two kinds, because a normal tool and a malicious one can use
+the same call.
 
-| Category | Points |
-|---|---:|
-| Shell execution, code injection, buffer overflow, JNDI injection | 50 |
-| Prompt injection, credential theft | 45 |
-| Data exfiltration, evasion, unsafe code | 40 |
-| File write or delete, deserialization, reflection | 30 |
-| File permissions, SQL operations | 25 |
-| Network access | 20 |
-| Environment variable access | 10 |
+**Capabilities** are what plenty of honest skills do: run a command, write a
+file, read an environment variable, call an API. They are worth knowing about,
+and worth reviewing, but they are not proof of anything. They add up to 30
+points at most, so a skill that writes five files does not score five times as
+badly as one that writes a single file.
 
-| Severity | Points |
-|---|---:|
-| Critical | 50 |
-| High | 30 |
-| Medium | 20 |
-| Low | 10 |
+**Threats** are patterns that only make sense if someone means harm: reading
+credentials and sending them out, prompt injection, hidden instructions,
+downloading something and running it. These count in full.
 
-So one `eval()` on its own puts a skill at 50 (Medium). Add one `exec()` and it's at 100 (Critical).
+Each category counts once, by its worst finding. Points come from severity:
+
+| Severity | Points | |
+|---|---:|---|
+| Critical | 50 | |
+| High | 30 | |
+| Medium | 20 | |
+| Low | 0 | Shown in the report, but does not move the score |
+
+```
+score = min(100, capabilities capped at 30 + threat points)
+```
+
+One critical threat always lands in High or above, so nothing critical is ever
+reported as safe or low.
+
+Worked examples, all measured:
+
+| Skill | Score | Verdict |
+|---|---:|---|
+| Writes five files | 0 | Safe |
+| One `eval()` | 51 | High - don't install without a review |
+| `eval()` plus one `exec()` | 80 | Critical - don't install |
 
 </details>
 
@@ -191,7 +207,7 @@ The JSON has `riskScore`, `riskLevel`, `codeFindings`, `dependencyFindings`, `sc
 
 Worth knowing before you trust any scanner:
 
-- **Instructions are read with rules, not understanding.** The `SKILL.md` reader catches the techniques used in real malicious skills, but a cleverly reworded instruction can still get past it. It was tested on 34 trusted skills from Anthropic and obra/superpowers: 33 had no instruction findings at all. The other one (Anthropic's `claude-api`) got a HIGH for a genuine `xattr` quarantine removal and a LOW for quoting "disregard the previous instruction" as an example of what not to write.
+- **Instructions are read with rules, not understanding.** The `SKILL.md` reader catches the techniques used in real malicious skills, but a cleverly reworded instruction can still get past it. It was tested on 34 trusted skills from Anthropic and obra/superpowers: 26 came back Safe, 8 came back Medium for honest capabilities like calling `subprocess` or writing files, and none came back High or Critical. The same scanner flags all 10 malicious test skills.
 - **Outside JS/TS it matches patterns.** That's fast and catches the common moves, but someone determined can disguise code to slip past pattern rules.
 - **CVE lookups cover npm packages only.** Python, Go, Rust and Ruby dependency files aren't checked against vulnerability databases yet.
 - **It flags capabilities, not guilt.** A skill that calls `fetch()` might be doing exactly what it says. Findings tell you where to look.

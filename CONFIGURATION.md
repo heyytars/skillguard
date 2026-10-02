@@ -21,7 +21,7 @@ Create a `.skillguardrc.json` file in your project root:
     "critical": 50,
     "high": 30,
     "medium": 20,
-    "low": 10
+    "low": 0
   },
   "globalPatternOverrides": [
     {
@@ -81,10 +81,29 @@ Adjust how much each severity level contributes to the risk score:
     "critical": 50,  // Each critical finding adds 50 points
     "high": 30,      // Each high finding adds 30 points
     "medium": 20,    // Each medium finding adds 20 points
-    "low": 10        // Each low finding adds 10 points
+    "low": 0         // Low findings are informational: shown, but worth 0
   }
 }
 ```
+
+Points come from severity alone. Each category counts once, by its worst
+finding, and findings split into two pools:
+
+- **Capabilities** (`Shell Execution`, `File System Write`, `Network Access`,
+  `Environment Access`, `SQL Operations`, and similar) are things honest tools
+  do too. Between them they cap at 30 points, so volume can never fail a skill.
+- **Threats** (everything else: `Credential Theft`, `Data Exfiltration`,
+  `Prompt Injection`, `Suspicious Download`, `Persistence`, `Destructive
+  Command`, and so on) count in full. Every category not on the capability list
+  is treated as a threat, so a new rule is never quietly harmless.
+
+```text
+score = min(100, min(capability points, 30) + threat points)
+```
+
+One critical threat lifts the total to the `high` threshold (51 by default), so
+a critical finding can never come out medium or safe. Set `low` back to 10 if
+you want low findings to move the score.
 
 ### Global Pattern Overrides
 

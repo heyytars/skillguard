@@ -12,6 +12,37 @@ interface PythonPattern {
   category: string;
   description: string;
   pattern: RegExp;
+  /** Skip when the line matches this (e.g. documentation, placeholders). */
+  unless?: RegExp;
+  /**
+   * Skip when the match sits inside a string literal. `print("eval(user_input)")`
+   * is a message, not a call.
+   */
+  skipInStrings?: boolean;
+}
+
+/**
+ * True when `index` falls inside a single- or double-quoted string on its line.
+ *
+ * A line-local walk with escapes handled. Multi-line triple-quoted strings are
+ * not tracked, so a match inside one still reports: false alarm over blind spot.
+ */
+function isInsideString(source: string, index: number): boolean {
+  const lineStart = source.lastIndexOf('\n', index - 1) + 1;
+  let quote: string | null = null;
+  for (let i = lineStart; i < index; i++) {
+    const ch = source[i];
+    if (quote !== null) {
+      if (ch === '\\') {
+        i++;
+        continue;
+      }
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    }
+  }
+  return quote !== null;
 }
 
 // Security patterns for Python
@@ -23,13 +54,24 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     category: 'Shell Execution',
     description: 'Executes shell commands - potential arbitrary code execution',
     pattern: /os\.system\s*\(/g,
+    skipInStrings: true,
+  },
+  // Shell execution: critical when a shell is explicitly requested. A plain
+  // `subprocess.Popen([...])` with a literal command list is common in real
+  // tools (eval harnesses, dev servers) and stays a review-level flag.
+  {
+    name: 'subprocess.shell.true',
+    severity: 'critical',
+    category: 'Shell Execution',
+    description: 'Runs a command through a shell - shell injection if any part is untrusted',
+    pattern: /subprocess\.(?:call|run|Popen|check_output|check_call)\s*\([^)]*shell\s*=\s*True/gs,
   },
   {
     name: 'subprocess.call',
-    severity: 'critical',
+    severity: 'high',
     category: 'Shell Execution',
-    description: 'Executes shell commands via subprocess - potential code execution',
-    pattern: /subprocess\.(call|run|Popen|check_output|check_call)\s*\(/g,
+    description: 'Runs an external command - check what it executes',
+    pattern: /subprocess\.(?:call|run|Popen|check_output|check_call)\s*\(/g,
   },
   {
     name: 'eval',
@@ -37,6 +79,7 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     category: 'Code Injection',
     description: 'Evaluates arbitrary code - critical security risk',
     pattern: /\beval\s*\(/g,
+    skipInStrings: true,
   },
   {
     name: 'exec',
@@ -44,6 +87,7 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     category: 'Code Injection',
     description: 'Executes arbitrary Python code - critical security risk',
     pattern: /\bexec\s*\(/g,
+    skipInStrings: true,
   },
   {
     name: '__import__',
@@ -51,22 +95,25 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     category: 'Dynamic Import',
     description: 'Dynamic module import - potential code injection',
     pattern: /__import__\s*\(/g,
+    skipInStrings: true,
   },
   {
     name: 'compile',
     severity: 'critical',
     category: 'Code Injection',
-    description: 'Compiles Python code dynamically - potential code injection',
-    pattern: /\bcompile\s*\(/g,
+    description: 'Compiles code dynamically - potential code execution',
+    // `re.compile(...)` compiles a regex, not code.
+    pattern: /(?<!\bre\.)\bcompile\s*\(/g,
+    skipInStrings: true,
   },
 
   // HIGH: File System Operations
   {
     name: 'open with write',
-    severity: 'high',
+    severity: 'low',
     category: 'File System Write',
-    description: 'Opens file for writing - potential data tampering',
-    pattern: /open\s*\([^)]*['"]w|open\s*\([^)]*['"]a/g,
+    description: 'Opens a file for writing',
+    pattern: /open\s*\([^)]*['"][wax](?:\+)?['"]/g,
   },
   {
     name: 'os.remove',
@@ -100,16 +147,16 @@ const PYTHON_PATTERNS: PythonPattern[] = [
   // HIGH: Prompt Injection / LLM API Usage
   {
     name: 'OpenAI API',
-    severity: 'high',
+    severity: 'low',
     category: 'Prompt Injection',
-    description: 'OpenAI API usage - potential prompt injection if using untrusted input',
+    description: 'Calls an OpenAI API - only a risk when the input is untrusted',
     pattern: /openai\.(ChatCompletion|Completion)\.create|client\.chat\.completions\.create/g,
   },
   {
     name: 'Anthropic API',
-    severity: 'high',
+    severity: 'low',
     category: 'Prompt Injection',
-    description: 'Anthropic Claude API usage - potential prompt injection if using untrusted input',
+    description: 'Calls the Claude API - only a risk when the input is untrusted',
     pattern: /anthropic\.(Anthropic|messages)\.create|client\.messages\.create/g,
   },
   {
@@ -180,8 +227,13 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     severity: 'critical',
     category: 'Credential Theft',
     description: 'Hardcoded API key or password detected',
+    // The lookbehind stops ENV_API_KEY / MY_PASSWORD, which name a variable
+    // rather than carry a secret. The value must be 12+ characters and hold a
+    // digit or a symbol, so placeholders like "auth-key" pass by.
     pattern:
-      /(?:api_key|api_secret|password|secret_key|auth_token|access_token)\s*=\s*['"][^'"]{8,}['"]/gi,
+      /(?<![A-Za-z0-9_])(?:api_key|api_secret|password|secret_key|auth_token|access_token)\s*=\s*['"](?=[^'"]{12,}['"])(?=[^'"]*(?:[0-9]|[^A-Za-z0-9\s-]))[^'"]+['"]/gi,
+    unless:
+      /(?:xxx+|your[_-]|placeholder|changeme|example|dummy|fake|test[_-]?key|<[^>]+>|\$\{|__|redacted)/i,
   },
   {
     name: 'SSH Key Access',
@@ -247,17 +299,17 @@ const PYTHON_PATTERNS: PythonPattern[] = [
 
   {
     name: 'F-String Prompt',
-    severity: 'high',
+    severity: 'low',
     category: 'Prompt Injection',
-    description: 'F-string in prompt - potential prompt injection',
+    description: 'Builds a prompt with an f-string - a risk only if the value is untrusted',
     pattern:
       /(?:prompt|system_message|user_message)\s*=\s*f['"]|f['"][^'"]*(?:prompt|system|instruction)/gi,
   },
   {
     name: 'Prompt Format',
-    severity: 'high',
+    severity: 'low',
     category: 'Prompt Injection',
-    description: 'String formatting in prompt - validate input sanitization',
+    description: 'Formats a prompt string - a risk only if the value is untrusted',
     pattern: /(?:prompt|message)\.format\s*\(/gi,
   },
   {
@@ -340,8 +392,10 @@ const PYTHON_PATTERNS: PythonPattern[] = [
     name: 'Sandbox Detection',
     severity: 'high',
     category: 'Evasion Technique',
-    description: 'Virtual machine/sandbox detection',
-    pattern: /(?:vmware|virtualbox|vbox|qemu|sandbox|analysis)/gi,
+    description: 'Looks for virtual machine or sandbox artifacts (anti-analysis)',
+    // Naming a sandbox is not detecting one; check for the artifact tests.
+    pattern:
+      /systemd-detect-virt|dmidecode\s+-s|VBoxGuestAdditions|vboxsf|\bvboxguest\b|registry.*(?:vbox|vmware)|(?:wmic|product)\s+get\s+serialnumber|hypervisor.*present|\/\.dockerenv|check_vm|is_virtual_machine|detect_vm/gi,
   },
   {
     name: 'Time Delay',
@@ -388,6 +442,9 @@ export class PythonAnalyzer implements LanguageAnalyzer {
         const position = match.index;
         const lineNumber = source.substring(0, position).split('\n').length;
         const column = position - source.lastIndexOf('\n', position - 1) - 1;
+
+        if (pattern.skipInStrings && isInsideString(source, position)) continue;
+        if (pattern.unless && pattern.unless.test(lines[lineNumber - 1] ?? '')) continue;
 
         findings.push({
           file: filePath,

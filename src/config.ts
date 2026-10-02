@@ -73,7 +73,9 @@ export const DEFAULT_CONFIG: SkillGuardConfig = {
     critical: 50,
     high: 30,
     medium: 20,
-    low: 10,
+    // Informational: low findings show up in the report but don't move the
+    // score, so ordinary file writes can't turn an honest skill into a verdict.
+    low: 0,
   },
   languages: {},
   globalPatternOverrides: [],
@@ -265,6 +267,21 @@ export class ConfigLoader {
     return (
       this.config.severityWeights?.[severity] ?? DEFAULT_CONFIG.severityWeights![severity] ?? 10
     );
+  }
+
+  /**
+   * The configured score bands, filled in from the defaults.
+   */
+  getThresholds(): RiskThresholds {
+    const defaults = DEFAULT_CONFIG.riskThresholds!;
+    const custom = this.config.riskThresholds ?? {};
+    return {
+      safe: custom.safe ?? defaults.safe!,
+      low: custom.low ?? defaults.low!,
+      medium: custom.medium ?? defaults.medium!,
+      high: custom.high ?? defaults.high!,
+      critical: custom.critical ?? defaults.critical!,
+    };
   }
 
   /**

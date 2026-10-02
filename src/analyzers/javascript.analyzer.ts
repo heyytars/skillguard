@@ -19,7 +19,19 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
     description: 'Executes shell commands - potential arbitrary code execution',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
-      return isCallToFunction(node, ['exec', 'execSync']);
+      if (!isCallToFunction(node, ['exec', 'execSync'])) return false;
+      // `regex.exec(str)` and `matcher.exec()` are not shell execution. Only
+      // count a member call when the object really is child_process.
+      const callee = unwrapTs(node.callee);
+      if (callee?.type === 'MemberExpression') {
+        const obj = unwrapTs(callee.object);
+        if (obj?.type === 'Identifier') {
+          return SHELL_OBJECT_NAMES.has(obj.name);
+        }
+        // process.execPath, etc: not a child_process call.
+        return false;
+      }
+      return true;
     },
   },
   {
@@ -29,7 +41,13 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
     description: 'Spawns child processes - potential arbitrary code execution',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
-      return isCallToFunction(node, ['spawn', 'spawnSync']);
+      if (!isCallToFunction(node, ['spawn', 'spawnSync'])) return false;
+      const callee = unwrapTs(node.callee);
+      if (callee?.type === 'MemberExpression') {
+        const obj = unwrapTs(callee.object);
+        return obj?.type === 'Identifier' && SHELL_OBJECT_NAMES.has(obj.name);
+      }
+      return true;
     },
   },
   {
@@ -392,12 +410,22 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
 
   {
     name: 'Template Injection',
-    severity: 'critical',
+    severity: 'high',
     category: 'Code Injection',
-    description: 'Server-side template injection (SSTI) risk',
+    description: 'Renders a template from data - risk of template injection (SSTI)',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
-      return isCallToFunction(node, ['compile', 'render', 'renderString', 'renderFile']);
+      // Only template engines. A generic render() or compile() is everywhere
+      // (regex compile, markdown render) and flags nothing.
+      const callee = unwrapTs(node.callee);
+      if (callee?.type === 'MemberExpression') {
+        const obj = unwrapTs(callee.object);
+        const prop = callee.property;
+        if (obj?.type === 'Identifier' && TEMPLATE_ENGINES.has(obj.name)) {
+          return prop?.type === 'Identifier' && TEMPLATE_METHODS.has(prop.name);
+        }
+      }
+      return false;
     },
   },
   {
@@ -470,13 +498,15 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
   },
   {
     name: 'Prompt Template Variable',
-    severity: 'medium',
+    severity: 'low',
     category: 'Prompt Injection',
-    description: 'User input in prompt template - validate input sanitization',
+    description: 'Template literal used as a prompt - only a risk with untrusted input',
     nodeType: 'TemplateLiteral',
     matcher: (node: any) => {
+      // Needs a real interpolation: text mentioning "system prompt" is just text.
+      if (!node.expressions?.length) return false;
       const raw = node.quasis?.map((q: any) => q.value.raw).join('') || '';
-      return raw.includes('prompt') || raw.includes('instruction') || raw.includes('system');
+      return /\b(?:system|prompt|instruction)s?\b/i.test(raw);
     },
   },
 
@@ -562,9 +592,9 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
 
   {
     name: 'Base64 Decode Execution',
-    severity: 'high',
+    severity: 'low',
     category: 'Evasion Technique',
-    description: 'Base64 decoding with execution - obfuscation technique',
+    description: 'Encodes or decodes data (base64) - only suspicious next to execution',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
       return (
@@ -611,17 +641,13 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
   },
   {
     name: 'String Obfuscation',
-    severity: 'medium',
+    severity: 'low',
     category: 'Evasion Technique',
-    description: 'String encoding/obfuscation - review for malicious intent',
+    description: 'Character-code string building - a common obfuscation trick',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
-      return isCallToFunction(node, [
-        'charCodeAt',
-        'fromCharCode',
-        'encodeURIComponent',
-        'decodeURIComponent',
-      ]);
+      // encodeURIComponent is ordinary URL work, not obfuscation.
+      return isCallToFunction(node, ['charCodeAt', 'fromCharCode', 'fromCodePoint', 'codePointAt']);
     },
   },
   {
@@ -641,6 +667,27 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
  * Helper: TypeScript casts don't change what runs. `(exec as any)(cmd)` or
  * `(<any>exec)(cmd)` still calls exec, so look through the cast.
  */
+/** Objects that hold child_process functions (require('child_process'), etc). */
+const SHELL_OBJECT_NAMES = new Set(['child_process', 'childProcess', 'cp', 'childProcessPromise']);
+
+/** Template engines where render(template, data) can be an injection point. */
+const TEMPLATE_ENGINES = new Set([
+  'ejs',
+  'pug',
+  'handlebars',
+  'hbs',
+  'nunjucks',
+  'mustache',
+  'liquid',
+]);
+const TEMPLATE_METHODS = new Set([
+  'render',
+  'renderFile',
+  'renderString',
+  'compile',
+  'compileFile',
+]);
+
 const TS_WRAPPERS = new Set([
   'TSAsExpression',
   'TSTypeAssertion',

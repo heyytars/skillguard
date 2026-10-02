@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.2.0 (2026-10-02)
+
+- Scoring now separates **capabilities** from **threats**. Running a command,
+  writing a file or calling an API is what honest tools do; those findings cap
+  at 30 points between them. Credential theft, exfiltration, prompt injection,
+  hidden instructions and downloaded-and-run payloads count in full.
+- Points come from severity alone (critical 50, high 30, medium 20, low 0).
+  Category weights are gone, so how a rule is written decides its weight. Set
+  `severityWeights.low` to 10 for the old behaviour.
+- Low findings are informational: they stay in the report and no longer move
+  the score.
+- Every category not on the capability list counts as a threat, so a new rule
+  is never quietly harmless. One critical threat lifts the total to the `high`
+  threshold, so a critical finding can never come out medium or safe.
+- Fixed: `pdf`, `docx`, `xlsx`, `pptx`, `skill-creator` and other honest skills
+  used to score CRITICAL for ordinary file writes. On 34 trusted skills the
+  results went from 9 CRITICAL to 0 High/Critical (26 Safe, 8 Medium).
+- Fixed false alarms that wrongly reported CRITICAL: `eval(` inside a string
+  (`print("eval(s) failed")`), `api_key = "auth-key"` placeholders, `ENV_API_KEY`
+  variable names, and `curl | bash` shown in a warning about `curl | bash`.
+- Fixed: `pipe-to-shell` is HIGH, not MEDIUM. A paste-site `curl … | bash` now
+  scores 60 and fails the scan, instead of passing at 50.
+- New: `src/__tests__/scoring.test.ts` pins the scoring rules (12 cases).
+- Docs: README and CONFIGURATION.md describe the capability/threat model and
+  the measured examples (five file writes = Safe 0, one `eval()` = High 51,
+  `eval()` + `exec()` = Critical 80).
+
 ## 2.1.0 (2026-10-02)
 
 - New: SkillGuard now reads `SKILL.md` and other markdown files, the

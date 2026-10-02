@@ -52,7 +52,7 @@ const MARKDOWN_RULES: MarkdownRule[] = [
   // ── Running code from the internet ──────────────────────────────────────
   {
     name: 'pipe-to-shell',
-    severity: 'medium',
+    severity: 'high',
     category: 'Remote Script',
     description:
       'Downloads a script and runs it straight away. Common for installers, but nobody reviews what executes and the server can change it any time.',
@@ -251,7 +251,7 @@ const MARKDOWN_RULES: MarkdownRule[] = [
   },
   {
     name: 'remove-quarantine',
-    severity: 'high',
+    severity: 'medium',
     category: 'Safety Bypass',
     description:
       "Removes macOS's download quarantine flag, so Gatekeeper never checks the file. The ClawHavoc malware used this. Fine for a binary you installed yourself, risky for anything downloaded.",
@@ -328,6 +328,26 @@ export class MarkdownAnalyzer implements LanguageAnalyzer {
   }
 }
 
+/**
+ * Words that mark a command as something to avoid. Skills often *warn* about a
+ * technique ("DO NOT use `curl | bash`") and a scanner that cannot tell the
+ * warning from the attack trains people to ignore it.
+ */
+const NEGATION =
+  /\b(?:do\s+not|don'?t|never|avoid|instead\s+of|not\s+allowed|must\s+not|should\s+not|shouldn'?t|blocked|refuse|disallow)\b/i;
+
+/**
+ * True when a warning sits close to the match. Prose wraps, so the lookback
+ * reaches about two lines back ("Never run ... `security dump-keychain`");
+ * forward check stays short. A warning only ever lowers a finding to
+ * informational, it never hides it: each occurrence is judged on its own.
+ */
+function isNegated(line: string, index: number, length: number, proseBefore: string): boolean {
+  const context = `${proseBefore} ${line.slice(0, index)}`.slice(-240);
+  const after = line.slice(index + length, index + length + 60);
+  return NEGATION.test(context) || NEGATION.test(after);
+}
+
 /** Analyze markdown text directly (exported for tests). */
 export function analyzeMarkdown(source: string, filePath: string): Finding[] {
   const findings: Finding[] = [];
@@ -368,8 +388,13 @@ export function analyzeMarkdown(source: string, filePath: string): Finding[] {
   // same character, at least as long, and no info string. Naive toggling on
   // every ``` line desyncs on nested/annotated fences in long docs.
   let fence: string | null = null;
+  // Recent prose, so a warning two lines above a command ("Never run ...
+  // `security dump-keychain`") still counts as a warning about it.
+  let prose = '';
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const proseBefore = prose;
+    prose = `${prose} ${line}`.slice(-240);
     const fm = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
     if (fm) {
       const marker = fm[1];
@@ -410,6 +435,22 @@ export function analyzeMarkdown(source: string, filePath: string): Finding[] {
         continue;
       }
       const snippet = rule.redact ? line.replace(m[0], redact(m[0])) : line;
+      // A doc that says "do not run curl | bash" is teaching, not attacking.
+      // It is still reported, just as information instead of a verdict.
+      if (rule.severity !== 'low' && isNegated(line, m.index, m[0].length, proseBefore)) {
+        add(
+          {
+            name: rule.name,
+            severity: 'low',
+            category: rule.category,
+            description: `${rule.description} Appears next to a warning about it, so this is informational.`,
+          },
+          i,
+          m.index,
+          snippet,
+        );
+        continue;
+      }
       add(rule, i, m.index, snippet);
     }
 

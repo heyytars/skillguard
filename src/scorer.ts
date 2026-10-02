@@ -1,96 +1,131 @@
 /**
  * SkillGuard Risk Scorer
- * Calculates overall risk score based on findings
+ *
+ * Why the score is not a plain sum
+ * --------------------------------
+ * A skill that opens five files for writing is not five times riskier than one
+ * that opens a single file. Counting every occurrence made ordinary skills
+ * (Anthropic's own `pdf` and `docx` tools) score CRITICAL, which teaches people
+ * to ignore the tool.
+ *
+ * So findings are split in two:
+ *
+ *  - **Capabilities**: what a normal tool does anyway, like running a command,
+ *    writing a file, calling an API. Worth knowing, worth reviewing, but not
+ *    proof of anything. They add up to CAPABILITY_CEILING at most, so a pile of
+ *    them can never fail a scan on its own.
+ *  - **Threats**: patterns that only make sense if someone means harm, like
+ *    reading credentials and sending them out, prompt injection, hidden
+ *    instructions, downloaded-and-run payloads. These score in full.
+ *
+ *   score = min(100, min(capability total, 30) + threat total)
+ *
+ * Each category counts once, by its worst finding, and one critical threat is
+ * lifted to the "high" band so it can never come out medium or safe.
  */
 
 import { Finding, DependencyFinding, ScanResult } from './types';
 import { getConfigLoader } from './config';
 
 /**
- * Risk score weights by category (used when config not available)
+ * Capability categories: real, but present in plenty of honest tools.
+ * Anything not listed here counts as a threat, so a new category can never
+ * slip through quietly.
  */
-const DEFAULT_CATEGORY_WEIGHTS: Record<string, number> = {
-  'Shell Execution': 50,
-  'Code Injection': 50,
-  'Prompt Injection': 45,
-  'Credential Theft': 45,
-  'Data Exfiltration': 40,
-  'Evasion Technique': 40,
-  'File System Write': 30,
-  'File System Delete': 30,
-  'File System Permissions': 25,
-  'Network Access': 20,
-  'Environment Access': 10,
-  'Buffer Overflow': 50,
-  'Memory Management': 30,
-  Deserialization: 30,
-  'Unsafe Operations': 40,
-  Reflection: 30,
-  'Dynamic Method Call': 30,
-  'File Inclusion': 35,
-  'JNDI Injection': 50,
-  'SQL Operations': 25,
-  'Server Variables': 15,
-  'Format String': 35,
-  'Type Casting': 35,
-  'Unsafe Pointers': 35,
-  'Unsafe Code': 40,
-  'File System Modification': 30,
-  'Dynamic Import': 30,
-  'File Operations': 25,
-  // SKILL.md / markdown instruction risks
-  'Remote Script': 25,
-  'Suspicious Download': 45,
-  'Safety Bypass': 45,
-  'Permission Bypass': 20,
-  Persistence: 45,
-  Autostart: 20,
-  'Destructive Command': 50,
-  'Hardcoded Secret': 30,
-  'Credential Handling': 10,
-  'Hidden Content': 30,
-  'Quoted Attack Phrase': 5,
-};
+const CAPABILITIES = new Set([
+  'Shell Execution',
+  'File System Write',
+  'File Operations',
+  'File System Delete',
+  'File System Modification',
+  'File System Permissions',
+  'Network Access',
+  'Environment Access',
+  'Dynamic Import',
+  'Server Variables',
+  'SQL Operations',
+  'Format String',
+  'Type Casting',
+  'Reflection',
+  'Dynamic Method Call',
+  'Memory Management',
+  'Memory Operations',
+  'Unsafe Pointers',
+  'Unsafe Code',
+  'Buffer Overflow',
+  'Deserialization',
+  'Credential Handling',
+]);
 
 /**
- * Calculate risk score from findings
- * Score ranges from 0 (safe) to 100 (critical)
+ * Capabilities alone can never score past this. It sits below the "high" band
+ * (51), so reviewing capabilities is a decision, not a failed scan.
+ */
+export const CAPABILITY_CEILING = 30;
+
+export function isCapability(category: string): boolean {
+  return CAPABILITIES.has(category);
+}
+
+/**
+ * Calculate risk score from findings. 0 = safe, 100 = critical.
  */
 export function calculateRiskScore(
   codeFindings: Finding[],
   dependencyFindings: DependencyFinding[],
 ): number {
-  let score = 0;
   const configLoader = getConfigLoader();
 
-  // Score code findings
+  const perCategory = new Map<string, number>();
+  const bump = (category: string, points: number): void => {
+    if (points > (perCategory.get(category) ?? 0)) perCategory.set(category, points);
+  };
+
   for (const finding of codeFindings) {
-    // Get severity weight from config
-    const severityWeight = configLoader.getSeverityWeight(finding.severity);
-
-    // Use category weight if available, otherwise use severity weight
-    const categoryWeight = DEFAULT_CATEGORY_WEIGHTS[finding.category];
-
-    // Take the higher of the two weights
-    score += Math.max(categoryWeight || 0, severityWeight);
+    // Points come from severity alone, so how a rule is written decides its
+    // weight and a category can never quietly outvote it.
+    bump(finding.category, configLoader.getSeverityWeight(finding.severity));
   }
 
-  // Score dependency findings
   for (const finding of dependencyFindings) {
-    // Use configurable severity weights for dependencies too
-    score += configLoader.getSeverityWeight(finding.severity);
+    // Grouped by kind of problem, so 30 vulnerable packages don't reach 100 by volume alone.
+    const label =
+      finding.source === 'npm-audit' || finding.source === 'osv'
+        ? 'Vulnerable Dependency'
+        : 'Suspicious Dependency';
+    bump(label, configLoader.getSeverityWeight(finding.severity));
   }
 
-  // Cap the score at 100
-  return Math.min(score, 100);
+  let capabilities = 0;
+  let threats = 0;
+  for (const [category, points] of perCategory) {
+    if (isCapability(category)) capabilities += points;
+    else threats += points;
+  }
+
+  // Capabilities can add detail; only threats can fail a skill.
+  let total = Math.min(capabilities, CAPABILITY_CEILING) + threats;
+
+  // A critical threat is never "safe" or "low", whatever the arithmetic says:
+  // lift it into the "high" band so the score and the verdict agree.
+  const hasCriticalThreat = codeFindings.some(
+    (f) => f.severity === 'critical' && !isCapability(f.category),
+  );
+  if (hasCriticalThreat) {
+    total = Math.max(total, configLoader.getThresholds().high ?? 51);
+  }
+
+  return Math.min(total, 100);
 }
 
 /**
- * Determine risk level from score using configurable thresholds
+ * Determine risk level from a score.
+ *
+ * The score already accounts for critical findings (see calculateRiskScore),
+ * so this is a plain band lookup.
  */
 export function getRiskLevel(score: number): ScanResult['riskLevel'] {
-  const configLoader = getConfigLoader();
-  return configLoader.getRiskLevel(score);
+  return getConfigLoader().getRiskLevel(score);
 }
 
 /**
@@ -112,8 +147,8 @@ export function getRiskStats(
     lowCount: 0,
   };
 
-  for (const finding of codeFindings) {
-    switch (finding.severity) {
+  const tally = (severity: Finding['severity']): void => {
+    switch (severity) {
       case 'critical':
         counts.criticalCount++;
         break;
@@ -127,24 +162,10 @@ export function getRiskStats(
         counts.lowCount++;
         break;
     }
-  }
+  };
 
-  for (const finding of dependencyFindings) {
-    switch (finding.severity) {
-      case 'critical':
-        counts.criticalCount++;
-        break;
-      case 'high':
-        counts.highCount++;
-        break;
-      case 'medium':
-        counts.mediumCount++;
-        break;
-      case 'low':
-        counts.lowCount++;
-        break;
-    }
-  }
+  for (const finding of codeFindings) tally(finding.severity);
+  for (const finding of dependencyFindings) tally(finding.severity);
 
   return counts;
 }
