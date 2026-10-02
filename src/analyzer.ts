@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Finding } from './types';
 import { analyzeFile as analyzeFileWithAnalyzer, getSupportedExtensions } from './analyzers';
+import { sweepCodeStrings } from './analyzers/payload';
 
 /**
  * Recursively find all source files in directory
@@ -75,6 +76,17 @@ export async function analyzeDirectory(
 
   for (const file of files) {
     const findings = await analyzeFile(file);
+    // Markdown already has these rules; code files need their own sweep, because
+    // a payload in a helper script was only showing up as a "capability".
+    if (!/\.(?:md|mdx|markdown)$/i.test(file)) {
+      const language = findings[0]?.language;
+      try {
+        const source = fs.readFileSync(file, 'utf-8');
+        findings.push(...sweepCodeStrings(source, file, language ?? 'javascript'));
+      } catch {
+        // Unreadable file: the language analyzers already reported what they could.
+      }
+    }
     allFindings.push(...findings);
   }
 

@@ -142,12 +142,14 @@ badly as one that writes a single file.
 credentials and sending them out, prompt injection, hidden instructions,
 downloading something and running it. These count in full.
 
-Each category counts once, by its worst finding. Points come from severity:
+Each category counts once, by its worst finding. Points come from severity, and
+the weights sit at the floor of their own band, so one High finding gives a High
+verdict instead of landing one band below it:
 
 | Severity | Points | |
 |---|---:|---|
-| Critical | 50 | |
-| High | 30 | |
+| Critical | 76 | |
+| High | 51 | |
 | Medium | 20 | |
 | Low | 0 | Shown in the report, but does not move the score |
 
@@ -155,18 +157,53 @@ Each category counts once, by its worst finding. Points come from severity:
 score = min(100, capabilities capped at 30 + threat points)
 ```
 
-One critical threat always lands in High or above, so nothing critical is ever
-reported as safe or low.
+One critical threat always lands in Critical, so nothing critical is ever
+reported as safe or low. A skill whose findings are all capabilities tops out at
+30, which is Medium: it does things worth a look, and nothing says harm.
 
-Worked examples, all measured:
+Worked examples, all measured with `skillguard scan --json`:
 
 | Skill | Score | Verdict |
 |---|---:|---|
-| Writes five files | 0 | Safe |
-| One `eval()` | 51 | High - don't install without a review |
-| `eval()` plus one `exec()` | 80 | Critical - don't install |
+| Writes five files | 30 | Medium - it writes files, review the findings |
+| One `eval()` | 76 | Critical - don't install |
+| `eval()` plus one `exec()` | 100 | Critical - don't install |
+| Markdown only, no code | 0 | Safe |
 
 </details>
+
+## Benchmark
+
+Two numbers decide whether a scanner is useful, and both are measured on every
+push: how many attacks it catches, and how often it cries wolf.
+
+```
+detection   23/23 attacks caught  (14 malicious, 9 disguised)
+false alarm 0/9 ordinary skills flagged + 0/34 trusted
+```
+
+- **23 attacks, all caught.** 14 are ordinary malicious skills; 9 are the same
+  payloads wearing a disguise ("documentation only", a fake warning, an
+  "example", a "test fixture").
+- **0 of 9 ordinary skills flagged**, and **0 of 34 real third-party skills**
+  (`anthropics/skills`, `obra/superpowers`, pinned commits). Writing files,
+  calling `subprocess` with literal arguments and fetching URLs all stay in the
+  Medium band where they belong.
+- **3 cases are listed but not scored**, and `bench/RESULTS.md` names them on
+  every run. They are the ones rules cannot settle: a security review that reads
+  the keychain, clearing the quarantine flag off your own build, and a page
+  explaining how an attack worked. A rule cannot tell *"run this"* from *"here is
+  how the attack worked"*. Pretending otherwise would just hide a false alarm.
+
+```bash
+python3 bench/run.py            # the shipped fixtures, seconds, no network
+python3 bench/run.py --corpus   # also fetches and scans the third-party skills
+```
+
+The runner exits 1 when an attack is missed or an ordinary skill is flagged, so
+CI fails on a regression. See [`bench/README.md`](bench/README.md) for what it
+does not measure, and [`docs/jev-spike.md`](docs/jev-spike.md) for the local
+model that was tried on those three cases.
 
 ## Make it yours
 

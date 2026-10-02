@@ -70,8 +70,11 @@ export const DEFAULT_CONFIG: SkillGuardConfig = {
     critical: 76,
   },
   severityWeights: {
-    critical: 50,
-    high: 30,
+    // Weights sit at the floor of their own band (critical 76, high 51), so a
+    // single finding of a given severity lands in that band instead of one
+    // below it: one HIGH threat must read "don't install without a review".
+    critical: 76,
+    high: 51,
     medium: 20,
     // Informational: low findings show up in the report but don't move the
     // score, so ordinary file writes can't turn an honest skill into a verdict.

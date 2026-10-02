@@ -481,19 +481,20 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
     description: 'Dynamic system prompt construction - potential prompt injection',
     nodeType: 'CallExpression',
     matcher: (node: any) => {
-      if (node.arguments?.length > 0) {
-        const hasRole = node.arguments.some((arg: any) => {
-          if (arg?.type === 'ObjectExpression') {
-            return arg.properties?.some((p: any) => {
-              const key = p.key?.name || p.key?.value;
-              return key === 'role' || key === 'system' || key === 'systemPrompt';
-            });
-          }
-          return false;
+      // A generic `role` key appears in all sorts of data objects (tldraw's
+      // `{ role: 'column' }`), so the value has to be a chat role.
+      const CHAT_ROLES = ['system', 'developer', 'user', 'assistant', 'tool', 'model'];
+      if (!node.arguments?.length) return false;
+      return node.arguments.some((arg: any) => {
+        if (arg?.type !== 'ObjectExpression') return false;
+        return arg.properties?.some((p: any) => {
+          const key = p.key?.name || p.key?.value;
+          if (key === 'system' || key === 'systemPrompt') return true;
+          if (key !== 'role') return false;
+          const value = p.value?.value;
+          return typeof value === 'string' && CHAT_ROLES.includes(value.toLowerCase());
         });
-        if (hasRole) return true;
-      }
-      return false;
+      });
     },
   },
   {

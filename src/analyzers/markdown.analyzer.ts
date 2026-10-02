@@ -46,7 +46,7 @@ const SECRET_FILES = String.raw`(?:~\/\.ssh\/|\.ssh\/id_|\bid_rsa\b|\bid_ed25519
 const SECRET_OR_ENV = String.raw`(?:${SECRET_FILES}|[\w~\/.-]*\.env\b)`;
 
 // Hosts used to serve payloads or catch stolen data. Legit skills rarely need them.
-const DROP_HOSTS = String.raw`(?:glot\.io|pastebin\.com|paste\.ee|hastebin\.|ghostbin\.|rentry\.co|transfer\.sh|file\.io|0x0\.st|webhook\.site|requestbin\.|pipedream\.net|beeceptor\.com|interact\.sh|oast\.(?:fun|me|pro|live|site|online)|burpcollaborator\.net|ngrok(?:-free)?\.(?:io|app|dev)|trycloudflare\.com|serveo\.net)`;
+export const DROP_HOSTS = String.raw`(?:glot\.io|pastebin\.com|paste\.ee|hastebin\.|ghostbin\.|rentry\.co|transfer\.sh|file\.io|0x0\.st|webhook\.site|requestbin\.|pipedream\.net|beeceptor\.com|interact\.sh|oast\.(?:fun|me|pro|live|site|online)|burpcollaborator\.net|ngrok(?:-free)?\.(?:io|app|dev)|trycloudflare\.com|serveo\.net)`;
 
 const MARKDOWN_RULES: MarkdownRule[] = [
   // ── Running code from the internet ──────────────────────────────────────

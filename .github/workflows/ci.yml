@@ -21,3 +21,29 @@ jobs:
     - run: npm run lint
     - run: npm run build
     - run: npm test
+
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build
+    # Fails if an attack is missed or an ordinary skill is flagged. The summary
+    # goes in the job output so a regression shows up without opening the log.
+    - name: Run benchmark
+      run: python3 bench/run.py | tee bench-out.txt
+    - name: Write summary
+      if: always()
+      run: |
+        {
+          echo '## skillguard benchmark'
+          echo '```'
+          cat bench-out.txt 2>/dev/null || echo "benchmark did not run"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
