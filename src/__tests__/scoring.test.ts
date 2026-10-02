@@ -46,7 +46,10 @@ describe('scoring: capabilities', () => {
 
   it('counts a category once by its worst finding', () => {
     const once = calculateRiskScore([code('high', 'Shell Execution')], []);
-    const five = calculateRiskScore(Array.from({ length: 5 }, () => code('high', 'Shell Execution')), []);
+    const five = calculateRiskScore(
+      Array.from({ length: 5 }, () => code('high', 'Shell Execution')),
+      [],
+    );
     expect(five).toBe(once);
   });
 });
@@ -100,7 +103,11 @@ describe('scoring: low findings are informational', () => {
   it('stays put when lows are added to a medium', () => {
     const medium = calculateRiskScore([code('medium', 'Remote Script')], []);
     const withLows = calculateRiskScore(
-      [code('medium', 'Remote Script'), code('low', 'Prompt Injection'), code('low', 'Evasion Technique')],
+      [
+        code('medium', 'Remote Script'),
+        code('low', 'Prompt Injection'),
+        code('low', 'Evasion Technique'),
+      ],
       [],
     );
     expect(withLows).toBe(medium);
