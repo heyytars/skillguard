@@ -638,14 +638,31 @@ const JS_RISK_PATTERNS: RiskPattern[] = [
 ];
 
 /**
+ * Helper: TypeScript casts don't change what runs. `(exec as any)(cmd)` or
+ * `(<any>exec)(cmd)` still calls exec, so look through the cast.
+ */
+const TS_WRAPPERS = new Set([
+  'TSAsExpression',
+  'TSTypeAssertion',
+  'TSNonNullExpression',
+  'TSSatisfiesExpression',
+  'ParenthesizedExpression',
+]);
+function unwrapTs(node: any): any {
+  while (node && TS_WRAPPERS.has(node.type)) node = node.expression;
+  return node;
+}
+
+/**
  * Helper: Check if node is a call to specific function names
  */
 function isCallToFunction(node: any, functionNames: string[]): boolean {
-  if (node.callee?.type === 'Identifier') {
-    return functionNames.includes(node.callee.name);
+  const callee = unwrapTs(node.callee);
+  if (callee?.type === 'Identifier') {
+    return functionNames.includes(callee.name);
   }
-  if (node.callee?.type === 'MemberExpression') {
-    const prop = node.callee.property;
+  if (callee?.type === 'MemberExpression') {
+    const prop = callee.property;
     if (prop?.type === 'Identifier') {
       return functionNames.includes(prop.name);
     }
@@ -691,6 +708,70 @@ function getCodeSnippet(source: string, line: number): string {
     return lines[lineIndex].trim();
   }
   return '';
+}
+
+/**
+ * TypeScript-aware parser. Loaded lazily: @sveltejs/acorn-typescript is ESM-only,
+ * and require() of ESM needs Node >= 20.19. If loading fails we fall back to the
+ * old strip-the-types approach instead of crashing.
+ */
+let tsParser: typeof acorn.Parser | null | undefined;
+function getTsParser(): typeof acorn.Parser | null {
+  if (tsParser !== undefined) return tsParser;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { tsPlugin } = require('@sveltejs/acorn-typescript');
+    tsParser = acorn.Parser.extend(tsPlugin()) as unknown as typeof acorn.Parser;
+  } catch (_e) {
+    tsParser = null;
+  }
+  return tsParser;
+}
+
+/**
+ * acorn-walk only knows plain JavaScript node types. For TypeScript-only nodes
+ * (interfaces, `as` casts, enums...) walk into any child nodes generically, so
+ * a call hidden inside `(exec as any)(cmd)` is still visited.
+ */
+const tsAwareBase = new Proxy(walk.base, {
+  get(target, key: string) {
+    if (key in target) return (target as any)[key];
+    return (node: any, st: any, c: any) => {
+      for (const k of Object.keys(node)) {
+        if (k === 'loc' || k === 'range') continue;
+        const v = node[k];
+        if (Array.isArray(v)) {
+          for (const child of v) if (child && typeof child.type === 'string') c(child, st);
+        } else if (v && typeof v.type === 'string') {
+          c(v, st);
+        }
+      }
+    };
+  },
+}) as walk.RecursiveVisitors<unknown>;
+
+/**
+ * Parse TypeScript source with a real TypeScript parser. Returns null if it
+ * can't, so the caller can fall back.
+ */
+function parseTypeScript(source: string): acorn.Node | null {
+  const Parser = getTsParser();
+  if (!Parser) return null;
+  for (const sourceType of ['module', 'script'] as const) {
+    try {
+      return Parser.parse(source, {
+        ecmaVersion: 'latest',
+        sourceType,
+        locations: true,
+        allowHashBang: true,
+        allowAwaitOutsideFunction: sourceType === 'module',
+        allowImportExportEverywhere: sourceType === 'module',
+      });
+    } catch (_e) {
+      // try the next source type
+    }
+  }
+  return null;
 }
 
 /**
@@ -742,162 +823,174 @@ export class JavaScriptAnalyzer implements LanguageAnalyzer {
       return findings;
     }
 
-    // Strip TypeScript type annotations for parsing (simple approach)
-    const processedSource = source
-      .replace(/:\s*[A-Za-z<>[\]|&\s,]+(?=\s*[=),;\n])/g, '') // Remove type annotations
-      .replace(/as\s+[A-Za-z<>[\]|&\s]+/g, '') // Remove type assertions
-      .replace(/<[A-Za-z<>[\]|&\s,]+>/g, ''); // Remove generics
+    const isTs = filePath.endsWith('.ts') || filePath.endsWith('.tsx');
 
-    const ast = parseCode(processedSource);
+    // TypeScript: use a real TypeScript parser first. The old regex type-stripping
+    // silently broke on things like `const x: string = ...` and returned no findings.
+    let ast: acorn.Node | null = isTs ? parseTypeScript(source) : null;
+
+    if (!ast) {
+      // Plain JS, or fallback when the TypeScript parser isn't available.
+      const processedSource = isTs
+        ? source
+            .replace(/:\s*[A-Za-z<>[\]|&\s,]+(?=\s*[=),;\n])/g, '') // Remove type annotations
+            .replace(/as\s+[A-Za-z<>[\]|&\s]+/g, '') // Remove type assertions
+            .replace(/<[A-Za-z<>[\]|&\s,]+>/g, '') // Remove generics
+        : source;
+      ast = parseCode(processedSource);
+    }
     if (!ast) {
       return findings;
     }
 
-    const language: Language =
-      filePath.endsWith('.ts') || filePath.endsWith('.tsx') ? 'typescript' : 'javascript';
+    const language: Language = isTs ? 'typescript' : 'javascript';
     const configLoader = getConfigLoader();
 
     // Walk the AST and check each pattern
-    walk.simple(ast, {
-      CallExpression(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'CallExpression' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+    walk.simple(
+      ast,
+      {
+        CallExpression(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'CallExpression' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
-      },
-      NewExpression(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'NewExpression' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+        },
+        NewExpression(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'NewExpression' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
-      },
-      MemberExpression(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'MemberExpression' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+        },
+        MemberExpression(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'MemberExpression' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
-      },
-      VariableDeclarator(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'VariableDeclarator' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+        },
+        VariableDeclarator(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'VariableDeclarator' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
-      },
-      TemplateLiteral(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'TemplateLiteral' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+        },
+        TemplateLiteral(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'TemplateLiteral' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
-      },
-      DebuggerStatement(node: any) {
-        for (const pattern of JS_RISK_PATTERNS) {
-          if (pattern.nodeType === 'DebuggerStatement' && pattern.matcher(node)) {
-            if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
-            const severity = configLoader.getPatternSeverity(
-              pattern.name,
-              pattern.severity,
-              language,
-            );
+        },
+        DebuggerStatement(node: any) {
+          for (const pattern of JS_RISK_PATTERNS) {
+            if (pattern.nodeType === 'DebuggerStatement' && pattern.matcher(node)) {
+              if (!configLoader.isPatternEnabled(pattern.name, language)) continue;
+              const severity = configLoader.getPatternSeverity(
+                pattern.name,
+                pattern.severity,
+                language,
+              );
 
-            findings.push({
-              file: filePath,
-              line: node.loc?.start?.line || 0,
-              column: node.loc?.start?.column || 0,
-              severity,
-              category: pattern.category,
-              description: pattern.description,
-              codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
-              language,
-            });
+              findings.push({
+                file: filePath,
+                line: node.loc?.start?.line || 0,
+                column: node.loc?.start?.column || 0,
+                severity,
+                category: pattern.category,
+                description: pattern.description,
+                codeSnippet: getCodeSnippet(source, node.loc?.start?.line || 0),
+                language,
+              });
+            }
           }
-        }
+        },
       },
-    });
+      tsAwareBase,
+    );
 
     return findings;
   }

@@ -237,19 +237,19 @@ Prioritize detecting data exfiltration:
 
 ### Threat Categories (v2.0)
 
-SkillGuard v2.0 detects 274+ patterns across 5 major threat categories:
+SkillGuard has 305 built-in rules. These five categories are the ones skills most often abuse:
 
-| Category | Examples | Default Severity |
+| Category | Examples | Default severity (rule count) |
 |----------|----------|------------------|
-| **Credential Theft** | Hardcoded secrets, SSH keys, keychains, AWS creds | Critical |
-| **Code Injection** | eval, SSTI, YAML load, reflection | Critical |
-| **Prompt Injection** | LLM API misuse, system prompts | High |
-| **Data Exfiltration** | DNS tunneling, clipboard, keyloggers | Critical |
-| **Evasion Techniques** | Anti-debug, sandbox detection, obfuscation | High |
+| **Credential Theft** | Hardcoded secrets, SSH keys, keychains, AWS creds | Mostly High (10 critical, 16 high, 8 medium) |
+| **Code Injection** | eval, SSTI, YAML load, reflection | Mostly Critical (30 critical, 13 high) |
+| **Prompt Injection** | LLM API misuse, system prompts | High (30 high, 8 medium) |
+| **Data Exfiltration** | DNS tunneling, clipboard, keyloggers | Mostly High (6 critical, 25 high, 8 medium) |
+| **Evasion Techniques** | Anti-debug, sandbox detection, obfuscation | Mostly High (7 critical, 33 high, 5 medium) |
 
 ### Common Patterns by Language
 
-#### JavaScript/TypeScript (43 patterns)
+#### JavaScript/TypeScript (40 rules)
 - `exec`, `spawn` - Shell execution
 - `eval`, `Function`, `vm.runInNewContext` - Code injection
 - `fetch`, `axios` - Network access
@@ -258,7 +258,7 @@ SkillGuard v2.0 detects 274+ patterns across 5 major threat categories:
 - **NEW**: `dns.lookup`, `clipboard`, `nativeImage.captureScreen` - Data exfiltration
 - **NEW**: `atob(...eval)`, `debugger`, `prototype.constructor` - Evasion
 
-#### Python (38 patterns)
+#### Python (45 rules)
 - `os.system`, `subprocess.call` - Shell execution
 - `eval`, `exec`, `yaml.load()`, `Template()` - Code injection
 - `requests`, `urllib` - Network access
@@ -268,7 +268,7 @@ SkillGuard v2.0 detects 274+ patterns across 5 major threat categories:
 - **NEW**: `pyperclip`, `ImageGrab`, `pynput.keyboard` - Data exfiltration
 - **NEW**: `base64.b64decode(...exec)`, `getattr` chains - Evasion
 
-#### Java (33 patterns)
+#### Java (37 rules)
 - `Runtime.exec`, `ProcessBuilder` - Shell execution
 - `Class.forName`, `SpEL`, `OGNL` - Reflection/Injection
 - `InitialContext.lookup` - JNDI (Log4Shell)
@@ -276,7 +276,7 @@ SkillGuard v2.0 detects 274+ patterns across 5 major threat categories:
 - **NEW**: `KeyStore`, `BasicAWSCredentials` - Credential theft
 - **NEW**: `Robot.createScreenCapture`, `KeyListener` - Data exfiltration
 
-#### Go (30 patterns)
+#### Go (33 rules)
 - `exec.Command` - Shell execution
 - `unsafe`, `plugin.Open()` - Unsafe operations
 - `os.WriteFile` - File operations

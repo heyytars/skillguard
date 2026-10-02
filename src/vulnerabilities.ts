@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { DependencyFinding, RiskSeverity } from './types';
@@ -135,7 +136,6 @@ function mapCvssToSeverity(score: number): RiskSeverity {
 export async function runNpmAudit(targetDir: string): Promise<DependencyFinding[]> {
   const findings: DependencyFinding[] = [];
   const packageLockPath = path.join(targetDir, 'package-lock.json');
-  const yarnLockPath = path.join(targetDir, 'yarn.lock');
   const packageJsonPath = path.join(targetDir, 'package.json');
 
   // Check if package.json exists
@@ -143,14 +143,41 @@ export async function runNpmAudit(targetDir: string): Promise<DependencyFinding[
     return findings;
   }
 
-  // npm audit requires a lock file
-  const hasLockFile = fs.existsSync(packageLockPath) || fs.existsSync(yarnLockPath);
+  // Never run npm inside the folder being scanned. It is untrusted: npm would
+  // read its .npmrc (which can point at any registry), and generating a lock
+  // file would leave a new package-lock.json behind in the user's skill.
+  // Copy just the manifest + lock file into a private temp dir and work there.
+  // The commands below are fixed strings with no scanned input in them.
+  // (yarn.lock is not copied: npm audit can't read it, so we generate a lock.)
+  let workDir: string;
+  try {
+    workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skillguard-audit-'));
+    fs.copyFileSync(packageJsonPath, path.join(workDir, 'package.json'));
+    if (fs.existsSync(packageLockPath)) {
+      fs.copyFileSync(packageLockPath, path.join(workDir, 'package-lock.json'));
+    }
+  } catch {
+    return findings;
+  }
 
-  if (!hasLockFile) {
-    // Try to generate package-lock.json without installing
+  try {
+    return auditInDir(workDir, findings);
+  } finally {
+    fs.rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
+function auditInDir(workDir: string, findings: DependencyFinding[]): DependencyFinding[] {
+  // Point npm at an empty per-project config so nothing from the scanned
+  // folder (or a parent of the temp dir) can change the registry.
+  const npmEnv = { ...process.env, npm_config_userconfig: path.join(workDir, '.npmrc-none') };
+
+  if (!fs.existsSync(path.join(workDir, 'package-lock.json'))) {
+    // Generate package-lock.json without installing anything
     try {
-      execSync('npm install --package-lock-only --ignore-scripts', {
-        cwd: targetDir,
+      execSync('npm install --package-lock-only --ignore-scripts --no-audit --no-fund', {
+        cwd: workDir,
+        env: npmEnv,
         stdio: 'pipe',
         timeout: 60000,
       });
@@ -163,7 +190,8 @@ export async function runNpmAudit(targetDir: string): Promise<DependencyFinding[
   try {
     // Run npm audit with JSON output
     const result = execSync('npm audit --json 2>/dev/null || true', {
-      cwd: targetDir,
+      cwd: workDir,
+      env: npmEnv,
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large projects
       timeout: 120000, // 2 minute timeout

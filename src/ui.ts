@@ -9,6 +9,7 @@ import figlet from 'figlet';
 import ora from 'ora';
 import * as path from 'path';
 import { ScanResult, Finding, DependencyFinding, RiskSeverity } from './types';
+import { version } from '../package.json';
 
 /**
  * Color scheme for hacker aesthetic
@@ -42,18 +43,12 @@ export function showLogo(): void {
       }),
     ),
   );
-  console.log(colors.secondary('  ╔══════════════════════════════════════════════════════════╗'));
-  console.log(
-    colors.secondary('  ║') +
-      colors.dim('  AI Agent Skill Security Scanner v1.0.0                   ') +
-      colors.secondary('║'),
-  );
-  console.log(
-    colors.secondary('  ║') +
-      colors.dim('  Detecting security risks before they become threats      ') +
-      colors.secondary('║'),
-  );
-  console.log(colors.secondary('  ╚══════════════════════════════════════════════════════════╝'));
+  const banner = (text: string): string =>
+    colors.secondary('  ║') + colors.dim(`  ${text}`.padEnd(58)) + colors.secondary('║');
+  console.log(colors.secondary(`  ╔${'═'.repeat(58)}╗`));
+  console.log(banner(`AI Agent Skill Security Scanner v${version}`));
+  console.log(banner('Detecting security risks before they become threats'));
+  console.log(colors.secondary(`  ╚${'═'.repeat(58)}╝`));
   console.log();
 }
 
@@ -172,16 +167,23 @@ function displayVulnerabilityFinding(finding: DependencyFinding): void {
 export function showReport(result: ScanResult, targetDir: string): void {
   const levelColor = getRiskLevelColor(result.riskLevel);
 
-  // Header with risk level
+  // Header with risk level. Every inner line is padded to exactly W columns
+  // so the right border lines up whatever the level text is.
   const riskLevelText = result.riskLevel.toUpperCase();
-  const header = levelColor(`
-  ╔══════════════════════════════════════════════════════════════╗
-  ║                                                              ║
-  ║                    SCAN COMPLETE                             ║
-  ║                    Risk Level: ${riskLevelText.padEnd(10)}                      ║
-  ║                                                              ║
-  ╚══════════════════════════════════════════════════════════════╝
-  `);
+  const W = 62;
+  const row = (text: string): string => `  ║${text.padEnd(W)}║`;
+  const header = levelColor(
+    [
+      '',
+      `  ╔${'═'.repeat(W)}╗`,
+      row(''),
+      row(`${' '.repeat(20)}SCAN COMPLETE`),
+      row(`${' '.repeat(20)}Risk Level: ${riskLevelText}`),
+      row(''),
+      `  ╚${'═'.repeat(W)}╝`,
+      '',
+    ].join('\n'),
+  );
 
   console.log(header);
 

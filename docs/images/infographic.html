@@ -1,0 +1,126 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--line:#30363d;--fg:#e6edf3;--mute:#8b949e;
+        --cyan:#38d6e8;--red:#ff5f6d;--org:#ff9f43;--yel:#ffc857;--blu:#5b9dff;--grn:#3ddc97;}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:transparent}
+  #art{width:1200px;padding:46px 54px 44px;background:var(--bg);color:var(--fg);
+       font:16px/1.45 -apple-system,"SF Pro Text","Segoe UI",sans-serif;border-radius:18px;
+       box-shadow:0 0 0 1px var(--line)}
+  .mono{font-family:"JetBrains Mono",Menlo,monospace;font-variant-ligatures:none}
+  h1{margin:0;font-size:30px;letter-spacing:-.4px}
+  .sub{color:var(--mute);margin:6px 0 30px;font-size:17px}
+  /* flow */
+  .flow{display:grid;grid-template-columns:1fr 46px 1.25fr 46px 1fr;align-items:stretch}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .lbl{font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mute);margin-bottom:12px;font-weight:600}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:30px}
+  .tree{font-size:14px;line-height:1.75;color:#c9d1d9}
+  .tree b{color:var(--fg);font-weight:600}
+  .bad{color:var(--red)}
+  .lane{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px dashed var(--line)}
+  .lbl + .lane{border-top:0;padding-top:0}
+  .ic{width:34px;height:34px;flex:0 0 34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;background:#0d1117;border:1px solid var(--line)}
+  .lane h3{margin:0;font-size:15.5px}
+  .lane p{margin:2px 0 0;color:var(--mute);font-size:13.5px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .chip{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:#c9d1d9}
+  /* verdict */
+  .gauge{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--grn) 0 1%,var(--blu) 1% 21%,var(--yel) 21% 51%,var(--org) 51% 76%,var(--red) 76% 100%);position:relative;margin:6px 0 8px}
+  .needle{position:absolute;right:-2px;top:-6px;width:4px;height:26px;background:#fff;border-radius:2px;box-shadow:0 0 0 2px var(--bg)}
+  .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+  .score{font-size:46px;font-weight:800;color:var(--red);margin:14px 0 0;line-height:1}
+  .score small{font-size:18px;color:var(--mute);font-weight:500}
+  .pill{display:inline-block;margin-top:10px;background:var(--red);color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:6px;letter-spacing:.6px}
+  .exit{margin-top:14px;font-size:13px;color:var(--mute)}
+  .exit code{color:var(--fg);background:#0d1117;border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+  /* bottom */
+  .row{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:22px}
+  .bars{display:grid;grid-template-columns:110px 1fr 34px;gap:7px 12px;align-items:center;font-size:13.5px}
+  .bar{height:10px;border-radius:5px;background:var(--cyan);opacity:.9}
+  .n{color:var(--mute);text-align:right}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:6px 0;border-top:1px solid var(--line)}
+  tr:first-child td{border-top:0}
+  td:last-child{text-align:right;color:var(--mute)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:0}
+  .foot{margin-top:22px;color:var(--mute);font-size:12.5px;display:flex;justify-content:space-between}
+</style></head>
+<body><div id="art">
+  <h1>🛡️ How SkillGuard checks an AI agent skill</h1>
+  <div class="sub">Point it at a folder before you install it. It reads the code, checks the dependencies, and gives a verdict.</div>
+
+  <div class="flow">
+    <div class="box">
+      <div class="lbl">1 · You point it at a skill</div>
+      <div class="tree mono">
+        <b>my-skill/</b><br>
+        ├─ index.ts<br>
+        ├─ helpers.py<br>
+        ├─ package.json<br>
+        └─ <span class="bad">lib/upload.go</span>
+      </div>
+      <div style="margin-top:14px;font-size:13.5px;color:var(--mute)">Any mix of 10 languages. Nothing is run or installed.</div>
+    </div>
+
+    <div class="arrow">➜</div>
+
+    <div class="box">
+      <div class="lbl">2 · Two checks run</div>
+      <div class="lane">
+        <div class="ic">🔍</div>
+        <div><h3>Reads the code</h3>
+          <p>305 built-in rules look for what a skill should not do quietly.</p>
+          <div class="chips"><span class="chip">runs shell commands</span><span class="chip">eval / injected code</span><span class="chip">steals keys &amp; secrets</span><span class="chip">sends data out</span><span class="chip">hides from analysis</span><span class="chip">tampers with LLM prompts</span></div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="ic">📦</div>
+        <div><h3>Checks the dependencies</h3>
+          <p>Known-bad and look-alike packages, plus live lookups in npm audit and the OSV vulnerability database.</p>
+          <div class="chips"><span class="chip mono">lodahs ≠ lodash</span><span class="chip">known CVEs</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow">➜</div>
+
+    <div class="box">
+      <div class="lbl">3 · You get a verdict</div>
+      <div class="gauge"><div class="needle"></div></div>
+      <div class="ticks"><span>0</span><span>21</span><span>51</span><span>76</span><span>100</span></div>
+      <div class="score">100<small> / 100</small></div>
+      <div class="pill">CRITICAL · DO NOT INSTALL</div>
+      <div class="exit">Every finding adds points, capped at 100.<br>HIGH or CRITICAL exits with <code>1</code>, so CI fails.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="box">
+      <div class="lbl">Built-in rules per language</div>
+      <div class="bars">
+        <span>Python</span><div class="bar" style="width:100%"></div><span class="n">45</span>
+        <span>PHP</span><div class="bar" style="width:97.8%"></div><span class="n">44</span>
+        <span>JS / TS</span><div class="bar" style="width:88.9%"></div><span class="n">40</span>
+        <span>Ruby</span><div class="bar" style="width:84.4%"></div><span class="n">38</span>
+        <span>Java</span><div class="bar" style="width:82.2%"></div><span class="n">37</span>
+        <span>C / C++</span><div class="bar" style="width:82.2%"></div><span class="n">37</span>
+        <span>Go</span><div class="bar" style="width:73.3%"></div><span class="n">33</span>
+        <span>Rust</span><div class="bar" style="width:68.9%"></div><span class="n">31</span>
+      </div>
+    </div>
+    <div class="box">
+      <div class="lbl">What the score means</div>
+      <table>
+        <tr><td><span class="dot" style="background:var(--grn)"></span>0 · Safe</td><td>good to install</td></tr>
+        <tr><td><span class="dot" style="background:var(--blu)"></span>1–20 · Low</td><td>skim the findings</td></tr>
+        <tr><td><span class="dot" style="background:var(--yel)"></span>21–50 · Medium</td><td>review carefully</td></tr>
+        <tr><td><span class="dot" style="background:var(--org)"></span>51–75 · High</td><td>don't install without review</td></tr>
+        <tr><td><span class="dot" style="background:var(--red)"></span>76–100 · Critical</td><td>don't install</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot"><span>Default thresholds. Every weight, threshold and rule can be changed in <span class="mono">.skillguardrc.json</span>.</span><span class="mono">brew install heyytars/tap/skillguard</span></div>
+</div></body></html>
