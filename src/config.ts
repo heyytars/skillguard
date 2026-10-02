@@ -137,17 +137,20 @@ export class ConfigLoader {
     ];
 
     // Look for config file in current directory and parent directories
-    let currentDir = startDir;
-    const root = path.parse(currentDir).root;
+    // Resolve first: a relative path like "../x" never reaches the filesystem
+    // root via path.dirname ("." is its own parent), which looped forever.
+    let currentDir = path.resolve(startDir);
 
-    while (currentDir !== root) {
+    while (true) {
       for (const configFile of configFiles) {
         const configPath = path.join(currentDir, configFile);
         if (fs.existsSync(configPath)) {
           return this.loadFromFile(configPath);
         }
       }
-      currentDir = path.dirname(currentDir);
+      const parentDir = path.dirname(currentDir);
+      if (parentDir === currentDir) break;
+      currentDir = parentDir;
     }
 
     return this.config;

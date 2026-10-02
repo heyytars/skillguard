@@ -11,6 +11,10 @@ import { scan } from './scanner';
 import { showLogo, createSpinner, showReport, showError, showInfo } from './ui';
 import { initializeConfig } from './config';
 
+// Read the version from package.json at build time (resolveJsonModule),
+// so the CLI can never drift from the published version again.
+import { version } from '../package.json';
+
 const program = new Command();
 
 program
@@ -18,7 +22,7 @@ program
   .description(
     '🛡️  Security scanner for AI Agent Skills (Multi-language: JS/TS/Python/Java/Go/Ruby/PHP/C/C++/Rust)',
   )
-  .version('1.1.1');
+  .version(version);
 
 program
   .command('scan <directory>')
