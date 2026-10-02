@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.1.0 (2026-10-02)
+
+- New: SkillGuard now reads `SKILL.md` and other markdown files, the
+  instructions an agent actually follows. 28 rules cover the techniques seen in
+  real malicious skills (ClawHavoc, Jan 2026; Snyk ToxicSkills, Feb 2026):
+  fake "prerequisite" installers, `curl | bash` from paste sites, raw-IP
+  payload servers, password-protected archives, base64 decode-and-run, secret
+  exfiltration, keychain dumps, "ignore previous instructions", fake system
+  messages, telling the agent to hide things from you, Gatekeeper/quarantine
+  bypass, writes to agent memory files (`MEMORY.md`, `SOUL.md`, `CLAUDE.md`),
+  hidden HTML comments, and invisible Unicode (tag smuggling, zero-width, bidi).
+- Injection in the frontmatter `description` is always CRITICAL, because the
+  agent loads it in every session.
+- Quoted attack phrases ("avoid saying 'ignore previous instructions'") are
+  reported as LOW, not as attacks. Chat-template tokens inside code blocks are
+  ignored. Detected secrets are redacted in the report.
+- Tested on 34 trusted skills (Anthropic, obra/superpowers): 33 have zero
+  instruction findings. 28 attack cases and 16 benign look-alikes are in the
+  test suite.
+
 ## 2.0.9 (2026-10-02)
 
 - Fixed: TypeScript files with type annotations were silently skipped. A file

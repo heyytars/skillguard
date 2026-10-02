@@ -12,6 +12,7 @@ import { RubyAnalyzer } from './ruby.analyzer';
 import { PHPAnalyzer } from './php.analyzer';
 import { CppAnalyzer } from './cpp.analyzer';
 import { RustAnalyzer } from './rust.analyzer';
+import { MarkdownAnalyzer } from './markdown.analyzer';
 
 // Register all available analyzers
 const ANALYZERS: LanguageAnalyzer[] = [
@@ -23,6 +24,7 @@ const ANALYZERS: LanguageAnalyzer[] = [
   new PHPAnalyzer(),
   new CppAnalyzer(),
   new RustAnalyzer(),
+  new MarkdownAnalyzer(),
 ];
 
 /**

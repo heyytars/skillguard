@@ -309,7 +309,7 @@ export function showReport(result: ScanResult, targetDir: string): void {
     if (result.codeFindings.some((f) => f.severity === 'critical')) {
       console.log(
         colors.danger(
-          '  ⚠ CRITICAL: Do not install this skill. Review shell execution and eval() usage.',
+          '  ⚠ CRITICAL: Do not install this skill. Review the critical findings above first.',
         ),
       );
     }
@@ -325,6 +325,13 @@ export function showReport(result: ScanResult, targetDir: string): void {
     if (result.codeFindings.some((f) => f.category === 'Network Access')) {
       console.log(
         colors.medium('  ⚠ Verify network requests are legitimate and not exfiltrating data.'),
+      );
+    }
+    if (result.codeFindings.some((f) => f.language === 'markdown')) {
+      console.log(
+        colors.warning(
+          "  ⚠ The skill's instructions (markdown) ask the agent to do risky things. Read them before you install.",
+        ),
       );
     }
     if (result.dependencyFindings.length > 0) {

@@ -49,19 +49,20 @@
 </style></head>
 <body><div id="art">
   <h1>🛡️ How SkillGuard checks an AI agent skill</h1>
-  <div class="sub">Point it at a folder before you install it. It reads the code, checks the dependencies, and gives a verdict.</div>
+  <div class="sub">Point it at a folder before you install it. It reads the instructions and the code, checks the dependencies, and gives a verdict.</div>
 
   <div class="flow">
     <div class="box">
       <div class="lbl">1 · You point it at a skill</div>
       <div class="tree mono">
         <b>my-skill/</b><br>
+        ├─ <span class="bad">SKILL.md</span><br>
         ├─ index.ts<br>
         ├─ helpers.py<br>
         ├─ package.json<br>
         └─ <span class="bad">lib/upload.go</span>
       </div>
-      <div style="margin-top:14px;font-size:13.5px;color:var(--mute)">Any mix of 10 languages. Nothing is run or installed.</div>
+      <div style="margin-top:14px;font-size:13.5px;color:var(--mute)">SKILL.md plus any mix of 10 languages. Nothing is run or installed.</div>
     </div>
 
     <div class="arrow">➜</div>
@@ -70,9 +71,9 @@
       <div class="lbl">2 · Two checks run</div>
       <div class="lane">
         <div class="ic">🔍</div>
-        <div><h3>Reads the code</h3>
-          <p>305 built-in rules look for what a skill should not do quietly.</p>
-          <div class="chips"><span class="chip">runs shell commands</span><span class="chip">eval / injected code</span><span class="chip">steals keys &amp; secrets</span><span class="chip">sends data out</span><span class="chip">hides from analysis</span><span class="chip">tampers with LLM prompts</span></div>
+        <div><h3>Reads the instructions and code</h3>
+          <p>333 built-in rules look for what a skill should not do quietly, in its SKILL.md and its code.</p>
+          <div class="chips"><span class="chip">fake install steps</span><span class="chip">hidden instructions</span><span class="chip">runs shell commands</span><span class="chip">eval / injected code</span><span class="chip">steals keys &amp; secrets</span><span class="chip">sends data out</span><span class="chip">hides from analysis</span><span class="chip">tampers with LLM prompts</span></div>
         </div>
       </div>
       <div class="lane">
@@ -98,7 +99,7 @@
 
   <div class="row">
     <div class="box">
-      <div class="lbl">Built-in rules per language</div>
+      <div class="lbl">Built-in rules</div>
       <div class="bars">
         <span>Python</span><div class="bar" style="width:100%"></div><span class="n">45</span>
         <span>PHP</span><div class="bar" style="width:97.8%"></div><span class="n">44</span>
@@ -108,6 +109,7 @@
         <span>C / C++</span><div class="bar" style="width:82.2%"></div><span class="n">37</span>
         <span>Go</span><div class="bar" style="width:73.3%"></div><span class="n">33</span>
         <span>Rust</span><div class="bar" style="width:68.9%"></div><span class="n">31</span>
+        <span style="color:var(--red)">SKILL.md</span><div class="bar" style="width:62.2%;background:var(--red)"></div><span class="n">28</span>
       </div>
     </div>
     <div class="box">

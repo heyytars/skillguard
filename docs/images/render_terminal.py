@@ -98,8 +98,8 @@ def main(src: str, dst: str) -> None:
     </style></head><body><div class="win" id="w">
     <div class="bar"><span class="dot" style="background:#ff5f57"></span>
     <span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
-    <span class="t">skillguard scan ./my-skill</span></div>
-    <pre><span class="cmd">$</span> skillguard scan ./my-skill
+    <span class="t">skillguard scan ./malicious-skill</span></div>
+    <pre><span class="cmd">$</span> skillguard scan ./malicious-skill
 {body}</pre></div></body></html>"""
     with sync_playwright() as p:
         b = p.chromium.launch(

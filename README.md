@@ -13,7 +13,7 @@ brew install heyytars/tap/skillguard
 skillguard scan ./some-skill
 ```
 
-<img src="docs/images/scan-demo.png" alt="SkillGuard scanning a skill and flagging it CRITICAL: shell execution, eval, file writes and network calls" width="620">
+<img src="docs/images/scan-demo.png" alt="SkillGuard scanning a fake 'YouTube summarizer' skill whose SKILL.md hides a malware installer and a credential-stealing HTML comment. Verdict: CRITICAL, 100 out of 100" width="620">
 
 </div>
 
@@ -25,14 +25,14 @@ Agents like Claude Code and Codex can now install "skills": small bundles of cod
 
 Most people install them the way they install browser extensions. Read the description, click install, hope for the best.
 
-SkillGuard is the five-second check you do first. It reads the code, checks what it depends on, and tells you plainly: **safe, review it, or don't install it.**
+SkillGuard is the five-second check you do first. It reads the instructions and the code, checks what it depends on, and tells you plainly: **safe, review it, or don't install it.**
 
 ## How it works
 
-<img src="docs/images/how-it-works.png" alt="Infographic: point SkillGuard at a skill folder. It reads the code with 305 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
+<img src="docs/images/how-it-works.png" alt="Infographic: point SkillGuard at a skill folder. It reads the SKILL.md and code with 333 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
 
 1. **You point it at a folder.** Nothing gets run or installed. It only reads.
-2. **It reads the code.** 305 built-in rules across 10 languages look for things a skill shouldn't be doing quietly.
+2. **It reads the instructions and the code.** 333 built-in rules check the `SKILL.md` the agent will follow and code in 10 languages for things a skill shouldn't be doing quietly.
 3. **It checks the dependencies.** Known-bad and look-alike packages (`lodahs` posing as `lodash`), plus live lookups in npm audit and the [OSV](https://osv.dev) vulnerability database.
 4. **You get a verdict.** A score from 0 to 100, every finding with its file and line, and an exit code your CI can act on.
 
@@ -40,6 +40,7 @@ SkillGuard is the five-second check you do first. It reads the code, checks what
 
 | | Risk | What that looks like |
 |---|---|---|
+| 📝 | **Harmful instructions in SKILL.md** | Fake "prerequisite" installers, `curl … \| bash` from paste sites, password-protected zips, "ignore previous instructions", hidden HTML comments and invisible Unicode, telling the agent to keep things from you |
 | 🐚 | **Runs shell commands** | `exec()`, `os.system()`, `Runtime.exec()`, `Command::new()` |
 | 💉 | **Runs injected code** | `eval()`, `new Function()`, `pickle.loads()`, JNDI lookups (the Log4Shell trick) |
 | 🔑 | **Steals keys and secrets** | Hardcoded secrets, reading `~/.ssh`, keychains, AWS credentials |
@@ -61,6 +62,7 @@ SkillGuard is the five-second check you do first. It reads the code, checks what
 | C / C++ | 37 | Pattern matching |
 | Go | 33 | Pattern matching |
 | Rust | 31 | Pattern matching |
+| **SKILL.md / markdown** | 28 | Reads it the way an agent would: prose, code blocks, frontmatter, hidden comments and invisible characters |
 
 ## Install
 
@@ -189,7 +191,7 @@ The JSON has `riskScore`, `riskLevel`, `codeFindings`, `dependencyFindings`, `sc
 
 Worth knowing before you trust any scanner:
 
-- **It reads code, not instructions.** A skill can do harm through what its `SKILL.md` or prompt files tell the agent to do. SkillGuard doesn't read those yet.
+- **Instructions are read with rules, not understanding.** The `SKILL.md` reader catches the techniques used in real malicious skills, but a cleverly reworded instruction can still get past it. It was tested on 34 trusted skills from Anthropic and obra/superpowers: 33 had no instruction findings at all. The other one (Anthropic's `claude-api`) got a HIGH for a genuine `xattr` quarantine removal and a LOW for quoting "disregard the previous instruction" as an example of what not to write.
 - **Outside JS/TS it matches patterns.** That's fast and catches the common moves, but someone determined can disguise code to slip past pattern rules.
 - **CVE lookups cover npm packages only.** Python, Go, Rust and Ruby dependency files aren't checked against vulnerability databases yet.
 - **It flags capabilities, not guilt.** A skill that calls `fetch()` might be doing exactly what it says. Findings tell you where to look.
@@ -202,7 +204,7 @@ Use it as the first look, not the only one.
 src/
 ├── index.ts             CLI entry
 ├── scanner.ts           walks the folder and runs everything
-├── analyzers/           one file per language (JS/TS builds a syntax tree; the rest match patterns)
+├── analyzers/           one file per language, plus markdown.analyzer.ts for SKILL.md (JS/TS builds a syntax tree; the rest match patterns)
 ├── dependencies.ts      known-bad and look-alike packages
 ├── vulnerabilities.ts   npm audit + OSV lookups (in a temp copy, never inside your folder)
 ├── scorer.ts            turns findings into a 0 to 100 score
@@ -221,7 +223,9 @@ Releasing is one command, `scripts/release.sh`. See [PUBLISHING.md](PUBLISHING.m
 
 ## Roadmap
 
-- [ ] Read `SKILL.md` and prompt files for harmful instructions
+- [x] Read `SKILL.md` and prompt files for harmful instructions
+- [ ] An install hook and a local MCP server, so agents check skills before installing them
+- [ ] Optional local-model second opinion (can only raise the score, never lower it)
 - [ ] CVE checks for Python, Go, Rust and Ruby dependencies
 - [ ] A ready-made GitHub Action
 - [ ] Syntax-tree analysis for Python

@@ -18,7 +18,8 @@ export type Language =
   | 'rust'
   | 'csharp'
   | 'kotlin'
-  | 'swift';
+  | 'swift'
+  | 'markdown';
 
 export interface Finding {
   file: string;

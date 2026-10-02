@@ -38,6 +38,18 @@ const DEFAULT_CATEGORY_WEIGHTS: Record<string, number> = {
   'File System Modification': 30,
   'Dynamic Import': 30,
   'File Operations': 25,
+  // SKILL.md / markdown instruction risks
+  'Remote Script': 25,
+  'Suspicious Download': 45,
+  'Safety Bypass': 45,
+  'Permission Bypass': 20,
+  Persistence: 45,
+  Autostart: 20,
+  'Destructive Command': 50,
+  'Hardcoded Secret': 30,
+  'Credential Handling': 10,
+  'Hidden Content': 30,
+  'Quoted Attack Phrase': 5,
 };
 
 /**
