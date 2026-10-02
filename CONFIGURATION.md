@@ -285,7 +285,7 @@ SkillGuard has 305 built-in rules. These five categories are the ones skills mos
 - **NEW**: `antidebug`, `sandbox detection` - Evasion
 
 #### Ruby/PHP/C++/Rust
-See the [SECURITY_COVERAGE_REPORT.md](SECURITY_COVERAGE_REPORT.md) for complete pattern lists with 30+ patterns each.
+See the [SECURITY_COVERAGE_REPORT.md](SECURITY_COVERAGE_REPORT.md) for longer pattern lists per language (from February 2026; the rule definitions in `src/analyzers/` are the current source).
 
 ## Language-Specific Settings
 

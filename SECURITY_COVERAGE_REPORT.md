@@ -3,11 +3,18 @@
 **Generated:** 2026-02-04
 **Purpose:** Comprehensive analysis of threat protection across all supported languages
 
+> **Read this first (updated 2026-10-02).** The coverage percentages in this report
+> are rough estimates from February 2026. They were never measured against a test
+> set of real attacks, so treat them as opinions, not results. The rule lists are
+> still a useful map of what each language checks for, but the counts are out of
+> date: there are now 305 rules in total. For the current list, read the rule
+> definitions in [`src/analyzers/`](src/analyzers/).
+
 ---
 
 ## Executive Summary
 
-SkillGuard provides **comprehensive multi-threat protection** across 9 programming languages with **~95% overall coverage** of major security threats relevant to AI agent skills.
+SkillGuard checks for these threats across 10 programming languages. The (unmeasured) estimate at the time was ~95% coverage of the major threats relevant to AI agent skills.
 
 ### ✅ Fully Protected Threat Types
 1. **Code Injection** - 98% coverage
