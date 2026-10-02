@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.8 (2026-10-02)
+
+- Fixed: `skillguard version` printed v1.0.0. It now shows the real version.
+- Docs: accurate claims, a working CI example, an up-to-date project tree.
+
 ## 2.0.7 (2026-10-02)
 
 - Fixed: scanning a relative path like `../my-skill` hung forever
