@@ -1,6 +1,6 @@
 # 🛡️ SkillGuard
 
-![CI](https://github.com/gauravsingh1995/skillgaurd/workflows/CI/badge.svg)
+![CI](https://github.com/heyytars/skillguard/workflows/CI/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![npm version](https://badge.fury.io/js/skillguard.svg)](https://www.npmjs.com/package/skillguard)
 
@@ -124,7 +124,7 @@ npx skillguard scan ./my-project
 
 ```bash
 # Clone the repository
-git clone https://github.com/gauravsingh1995/skillgaurd.git
+git clone https://github.com/heyytars/skillguard.git
 cd skillgaurd
 
 # Install dependencies
@@ -523,8 +523,8 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct]
 
 ## 💬 Community & Support
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/gauravsingh1995/skillgaurd/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/gauravsingh1995/skillgaurd/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/heyytars/skillguard/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/heyytars/skillguard/discussions)
 - 📖 **Documentation**: [CONFIGURATION.md](CONFIGURATION.md)
 - 🌐 **npm Package**: [skillguard](https://www.npmjs.com/package/skillguard)
 

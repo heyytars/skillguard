@@ -15,15 +15,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gauravsingh1995/skillguard.git"
+    "url": "git+https://github.com/heyytars/skillguard.git"
   },
   "publishConfig": {
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/gauravsingh1995/skillguard/issues"
+    "url": "https://github.com/heyytars/skillguard/issues"
   },
-  "homepage": "https://github.com/gauravsingh1995/skillguard#readme",
+  "homepage": "https://github.com/heyytars/skillguard#readme",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -48,7 +48,7 @@
     "static-analysis",
     "code-analysis"
   ],
-  "author": "gauravsingh1995",
+  "author": "heyytars",
   "license": "MIT",
   "dependencies": {
     "acorn": "^8.11.3",

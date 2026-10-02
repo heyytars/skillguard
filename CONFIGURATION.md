@@ -379,4 +379,4 @@ See [`.skillguardrc.example.json`](.skillguardrc.example.json) for a fully docum
 ## Support
 
 For questions or issues with configuration, please open an issue on GitHub:
-https://github.com/gauravsingh1995/skillgaurd/issues
+https://github.com/heyytars/skillguard/issues
