@@ -1,6 +1,6 @@
-# Releasing SkillGuard
+# Releasing skillguard
 
-SkillGuard ships through **GitHub Releases** and the **heyytars/tap** Homebrew tap.
+skillguard ships through **GitHub Releases** and the **heyytars/tap** Homebrew tap.
 It is not published to the npm registry. `package.json` has `"private": true`, so an
 accidental `npm publish` is refused.
 

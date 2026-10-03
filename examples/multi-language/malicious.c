@@ -1,5 +1,5 @@
 /**
- * Example malicious C code for SkillGuard testing
+ * Example malicious C code for skillguard testing
  */
 
 #include <stdio.h>

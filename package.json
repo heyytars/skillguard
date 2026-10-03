@@ -1,7 +1,7 @@
 {
   "name": "skillguard",
   "version": "2.4.0",
-  "description": "CLI security scanner for AI Agent Skills - 274+ security patterns for credential theft, code injection, prompt injection, data exfiltration & evasion detection across 9 languages",
+  "description": "CLI security scanner for AI agent skills - 341 rules for credential theft, code injection, prompt injection, data exfiltration & evasion across 10 languages",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {

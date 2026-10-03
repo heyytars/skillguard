@@ -1,5 +1,5 @@
 /**
- * SkillGuard Scanner
+ * skillguard Scanner
  * Main scanning orchestrator
  */
 

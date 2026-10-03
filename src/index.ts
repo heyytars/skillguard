@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * SkillGuard CLI Entry Point
+ * skillguard CLI Entry Point
  * Security scanner for AI Agent Skills
  */
 
@@ -83,7 +83,7 @@ program
   .description('Show version information')
   .action(() => {
     showLogo();
-    showInfo(`SkillGuard v${version}`);
+    showInfo(`skillguard v${version}`);
   });
 
 // Parse arguments

@@ -1,6 +1,6 @@
-# SkillGuard Configuration Guide
+# skillguard Configuration Guide
 
-SkillGuard supports extensive configuration to customize risk evaluation based on your specific security requirements. This allows you to adjust severity levels, thresholds, and enable/disable specific security checks.
+skillguard supports extensive configuration to customize risk evaluation based on your specific security requirements. This allows you to adjust severity levels, thresholds, and enable/disable specific security checks.
 
 ## Table of Contents
 
@@ -33,7 +33,7 @@ Create a `.skillguardrc.json` file in your project root:
 }
 ```
 
-Run SkillGuard:
+Run skillguard:
 
 ```bash
 # Auto-detects .skillguardrc.json
@@ -45,7 +45,7 @@ skillguard scan ./my-project --config ./custom-config.json
 
 ## Configuration Files
 
-SkillGuard searches for configuration files in this order:
+skillguard searches for configuration files in this order:
 
 1. File specified via `--config` flag
 2. `.skillguardrc.json` in current directory
@@ -256,7 +256,7 @@ Prioritize detecting data exfiltration:
 
 ### Threat Categories (v2.0)
 
-SkillGuard has 305 built-in rules. These five categories are the ones skills most often abuse:
+skillguard has 305 built-in rules. These five categories are the ones skills most often abuse:
 
 | Category | Examples | Default severity (rule count) |
 |----------|----------|------------------|
@@ -377,7 +377,7 @@ skillguard scan . --config .skillguardrc.prod.json
 
 ### Pattern Priority
 
-When a pattern is defined in multiple places, SkillGuard uses this priority:
+When a pattern is defined in multiple places, skillguard uses this priority:
 
 1. Language-specific override (highest priority)
 2. Global pattern override

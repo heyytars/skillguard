@@ -1,5 +1,5 @@
 /**
- * SkillGuard Configuration System
+ * skillguard Configuration System
  * Allows users to customize risk evaluation and severity levels
  */
 
@@ -34,7 +34,7 @@ export interface SeverityWeights {
   low: number;
 }
 
-export interface SkillGuardConfig {
+export interface ScannerConfig {
   // Risk evaluation settings
   riskThresholds?: Partial<RiskThresholds>;
   severityWeights?: Partial<SeverityWeights>;
@@ -61,7 +61,7 @@ export interface SkillGuardConfig {
 }
 
 // Default configuration
-export const DEFAULT_CONFIG: SkillGuardConfig = {
+export const DEFAULT_CONFIG: ScannerConfig = {
   riskThresholds: {
     safe: 0,
     low: 1,
@@ -104,7 +104,7 @@ export const DEFAULT_CONFIG: SkillGuardConfig = {
  * Configuration loader class
  */
 export class ConfigLoader {
-  private config: SkillGuardConfig;
+  private config: ScannerConfig;
 
   constructor() {
     this.config = { ...DEFAULT_CONFIG };
@@ -113,7 +113,7 @@ export class ConfigLoader {
   /**
    * Load configuration from file
    */
-  loadFromFile(configPath: string): SkillGuardConfig {
+  loadFromFile(configPath: string): ScannerConfig {
     try {
       if (!fs.existsSync(configPath)) {
         return this.config;
@@ -133,7 +133,7 @@ export class ConfigLoader {
   /**
    * Auto-discover and load configuration file
    */
-  loadConfig(startDir: string = process.cwd()): SkillGuardConfig {
+  loadConfig(startDir: string = process.cwd()): ScannerConfig {
     const configFiles = [
       '.skillguardrc.json',
       '.skillguardrc',
@@ -165,9 +165,9 @@ export class ConfigLoader {
    * Merge user config with default config
    */
   private mergeConfig(
-    defaultConfig: SkillGuardConfig,
-    userConfig: Partial<SkillGuardConfig>,
-  ): SkillGuardConfig {
+    defaultConfig: ScannerConfig,
+    userConfig: Partial<ScannerConfig>,
+  ): ScannerConfig {
     return {
       riskThresholds: {
         ...defaultConfig.riskThresholds,
@@ -198,7 +198,7 @@ export class ConfigLoader {
   /**
    * Get current configuration
    */
-  getConfig(): SkillGuardConfig {
+  getConfig(): ScannerConfig {
     return this.config;
   }
 
@@ -317,7 +317,7 @@ export function getConfigLoader(reload: boolean = false): ConfigLoader {
 /**
  * Initialize configuration with optional path
  */
-export function initializeConfig(configPath?: string, startDir?: string): SkillGuardConfig {
+export function initializeConfig(configPath?: string, startDir?: string): ScannerConfig {
   const loader = getConfigLoader(true);
 
   if (configPath) {

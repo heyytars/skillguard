@@ -1,5 +1,5 @@
 /**
- * SkillGuard Dependency Inspector
+ * skillguard Dependency Inspector
  * Checks package.json dependencies against a threat database
  * and integrates with npm audit and OSV for real vulnerability detection
  */

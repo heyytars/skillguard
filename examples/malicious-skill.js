@@ -1,5 +1,5 @@
 /**
- * Sample Malicious Skill for Testing SkillGuard
+ * Sample Malicious Skill for Testing skillguard
  * DO NOT USE IN PRODUCTION - This file is intentionally vulnerable
  */
 

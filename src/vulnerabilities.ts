@@ -1,5 +1,5 @@
 /**
- * SkillGuard Vulnerability Scanner
+ * skillguard Vulnerability Scanner
  * Integrates with npm audit and OSV (Open Source Vulnerabilities) database
  * for real-time vulnerability detection in dependencies
  */

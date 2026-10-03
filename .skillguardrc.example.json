@@ -1,6 +1,6 @@
 {
   "$schema": "https://skillguard.dev/schema.json",
-  "description": "Example SkillGuard configuration with all available options",
+  "description": "Example skillguard configuration with all available options",
 
   "riskThresholds": {
     "safe": 0,

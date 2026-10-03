@@ -1,5 +1,5 @@
 /**
- * SkillGuard Multi-Language Analyzer
+ * skillguard Multi-Language Analyzer
  * Analyzes code across multiple programming languages for security risks
  */
 

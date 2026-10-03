@@ -1,5 +1,5 @@
 /**
- * Example malicious Java code for SkillGuard testing
+ * Example malicious Java code for skillguard testing
  */
 
 import java.io.*;

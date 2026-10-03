@@ -1,4 +1,4 @@
-// Example malicious Rust code for SkillGuard testing
+// Example malicious Rust code for skillguard testing
 
 use std::process::Command;
 use std::fs;

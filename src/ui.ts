@@ -1,5 +1,5 @@
 /**
- * SkillGuard UI/Reporter
+ * skillguard UI/Reporter
  * Beautiful CLI output with hacker aesthetic
  */
 
@@ -37,7 +37,7 @@ export function showLogo(): void {
   console.log();
   console.log(
     colors.primary(
-      figlet.textSync('SKILLGUARD', {
+      figlet.textSync('skillguard', {
         font: 'ANSI Shadow',
         horizontalLayout: 'default',
       }),

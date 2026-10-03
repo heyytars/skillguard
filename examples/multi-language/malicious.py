@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example malicious Python code for SkillGuard testing
+Example malicious Python code for skillguard testing
 """
 
 import os

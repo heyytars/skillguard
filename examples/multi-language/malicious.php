@@ -1,6 +1,6 @@
 <?php
 /**
- * Example malicious PHP code for SkillGuard testing
+ * Example malicious PHP code for skillguard testing
  */
 
 // CRITICAL: Shell execution

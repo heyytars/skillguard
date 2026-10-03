@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# Example malicious Ruby code for SkillGuard testing
+# Example malicious Ruby code for skillguard testing
 
 require 'net/http'
 require 'fileutils'

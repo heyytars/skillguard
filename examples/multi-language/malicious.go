@@ -1,4 +1,4 @@
-// Example malicious Go code for SkillGuard testing
+// Example malicious Go code for skillguard testing
 package main
 
 import (

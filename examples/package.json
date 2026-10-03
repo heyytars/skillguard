@@ -1,7 +1,7 @@
 {
   "name": "malicious-skill",
   "version": "1.0.0",
-  "description": "A sample malicious skill for testing SkillGuard",
+  "description": "A sample malicious skill for testing skillguard",
   "main": "malicious-skill.js",
   "dependencies": {
     "evil-package": "^1.0.0",

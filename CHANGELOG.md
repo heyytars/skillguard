@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.4.1 (2026-10-02)
+
+- **One name: `skillguard`.** The project is written `skillguard` everywhere now
+  (it was `SkillGuard` in the docs, help text, comments and metadata, and
+  `skillgaurd` in one link). Same lowercase treatment as `git` or `npm`. Nothing
+  about the command, the flags or the output changed.
+- Corrected the package description: **341 rules across 10 languages** (it said
+  274+ patterns across 9).
+- Renamed the internal config interface `SkillGuardConfig` to `ScannerConfig`;
+  it is not a brand name.
+
 ## 2.4.0 (2026-10-02)
 
 - **Shipped a benchmark.** `bench/run.py` measures detection and false alarms
@@ -81,7 +92,7 @@
 
 ## 2.1.0 (2026-10-02)
 
-- New: SkillGuard now reads `SKILL.md` and other markdown files, the
+- New: skillguard now reads `SKILL.md` and other markdown files, the
   instructions an agent actually follows. 28 rules cover the techniques seen in
   real malicious skills (ClawHavoc, Jan 2026; Snyk ToxicSkills, Feb 2026):
   fake "prerequisite" installers, `curl | bash` from paste sites, raw-IP

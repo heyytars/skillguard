@@ -1,4 +1,4 @@
-"""Render a real SkillGuard scan (ANSI output) to a terminal-style PNG.
+"""Render a real skillguard scan (ANSI output) to a terminal-style PNG.
 
 Regenerate (needs playwright and Chrome):
 

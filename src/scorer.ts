@@ -1,5 +1,5 @@
 /**
- * SkillGuard Risk Scorer
+ * skillguard Risk Scorer
  *
  * Why the score is not a plain sum
  * --------------------------------

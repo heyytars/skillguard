@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ SkillGuard
+# 🛡️ skillguard
 
 **Scan an AI agent skill before you let it run on your machine.**
 
@@ -13,7 +13,7 @@ brew install heyytars/tap/skillguard
 skillguard scan ./some-skill
 ```
 
-<img src="docs/images/scan-demo.png" alt="SkillGuard scanning a fake 'YouTube summarizer' skill whose SKILL.md hides a malware installer and a credential-stealing HTML comment. Verdict: CRITICAL, 100 out of 100" width="100%">
+<img src="docs/images/scan-demo.png" alt="skillguard scanning a fake 'YouTube summarizer' skill whose SKILL.md hides a malware installer and a credential-stealing HTML comment. Verdict: CRITICAL, 100 out of 100" width="100%">
 
 </div>
 
@@ -25,11 +25,11 @@ Agents like Claude Code and Codex can now install "skills": small bundles of cod
 
 Most people install them the way they install browser extensions. Read the description, click install, hope for the best.
 
-SkillGuard is the five-second check you do first. It reads the instructions and the code, checks what it depends on, and tells you plainly: **safe, review it, or don't install it.**
+skillguard is the five-second check you do first. It reads the instructions and the code, checks what it depends on, and tells you plainly: **safe, review it, or don't install it.**
 
 ## How it works
 
-<img src="docs/images/how-it-works.png" alt="Infographic: point SkillGuard at a skill folder. It reads the SKILL.md and code with 341 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
+<img src="docs/images/how-it-works.png" alt="Infographic: point skillguard at a skill folder. It reads the SKILL.md and code with 341 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
 
 1. **You point it at a folder.** Nothing gets run or installed. It only reads.
 2. **It reads the instructions and the code.** 333 built-in rules check the `SKILL.md` the agent will follow and code in 10 languages for things a skill shouldn't be doing quietly.
@@ -84,7 +84,7 @@ npm install -g https://github.com/heyytars/skillguard/releases/latest/download/s
 npx -y https://github.com/heyytars/skillguard/releases/latest/download/skillguard.tgz scan ./some-skill
 ```
 
-> SkillGuard isn't on the npm registry. It ships through Homebrew and GitHub Releases only, so any `skillguard` package you find on npm isn't this project.
+> skillguard isn't on the npm registry. It ships through Homebrew and GitHub Releases only, so any `skillguard` package you find on npm isn't this project.
 
 <details>
 <summary>Build from source</summary>
@@ -208,7 +208,7 @@ model that was tried on those three cases.
 
 ## Make it yours
 
-Drop a `.skillguardrc.json` next to the skill (or in any folder above it) and SkillGuard picks it up. You only write what you want to change; everything else keeps its default.
+Drop a `.skillguardrc.json` next to the skill (or in any folder above it) and skillguard picks it up. You only write what you want to change; everything else keeps its default.
 
 ```json
 {
@@ -230,7 +230,7 @@ Ready-made presets:
 
 ## Put it in CI
 
-SkillGuard exits with code `1` when the verdict is **High** or **Critical**, so a risky skill fails the build with no extra scripting.
+skillguard exits with code `1` when the verdict is **High** or **Critical**, so a risky skill fails the build with no extra scripting.
 
 ```yaml
 - name: Scan skill

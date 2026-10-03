@@ -1,5 +1,5 @@
 /**
- * SkillGuard Type Definitions
+ * skillguard Type Definitions
  * Core types for security scanning and risk assessment
  */
 

@@ -1,5 +1,5 @@
 /**
- * Sample Safe Skill for Testing SkillGuard
+ * Sample Safe Skill for Testing skillguard
  * This file should pass security scanning with score 0
  */
 
