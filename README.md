@@ -13,7 +13,7 @@ brew install heyytars/tap/skillguard
 skillguard scan ./some-skill
 ```
 
-<img src="docs/images/scan-demo.png" alt="SkillGuard scanning a fake 'YouTube summarizer' skill whose SKILL.md hides a malware installer and a credential-stealing HTML comment. Verdict: CRITICAL, 100 out of 100" width="620">
+<img src="docs/images/scan-demo.png" alt="SkillGuard scanning a fake 'YouTube summarizer' skill whose SKILL.md hides a malware installer and a credential-stealing HTML comment. Verdict: CRITICAL, 100 out of 100" width="100%">
 
 </div>
 
@@ -29,7 +29,7 @@ SkillGuard is the five-second check you do first. It reads the instructions and 
 
 ## How it works
 
-<img src="docs/images/how-it-works.png" alt="Infographic: point SkillGuard at a skill folder. It reads the SKILL.md and code with 333 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
+<img src="docs/images/how-it-works.png" alt="Infographic: point SkillGuard at a skill folder. It reads the SKILL.md and code with 341 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
 
 1. **You point it at a folder.** Nothing gets run or installed. It only reads.
 2. **It reads the instructions and the code.** 333 built-in rules check the `SKILL.md` the agent will follow and code in 10 languages for things a skill shouldn't be doing quietly.
