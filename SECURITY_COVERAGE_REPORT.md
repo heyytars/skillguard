@@ -7,7 +7,7 @@
 > are rough estimates from February 2026. They were never measured against a test
 > set of real attacks, so treat them as opinions, not results. The rule lists are
 > still a useful map of what each language checks for, but the counts are out of
-> date: there are now 305 rules in total. For the current list, read the rule
+> date: there are now 341 rules in total. For the current list, read the rule
 > definitions in [`src/analyzers/`](src/analyzers/).
 
 ---

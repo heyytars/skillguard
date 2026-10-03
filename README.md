@@ -32,7 +32,7 @@ skillguard is the five-second check you do first. It reads the instructions and 
 <img src="docs/images/how-it-works.png" alt="Infographic: point skillguard at a skill folder. It reads the SKILL.md and code with 341 rules and checks the dependencies, then gives a 0 to 100 risk score and a verdict" width="100%">
 
 1. **You point it at a folder.** Nothing gets run or installed. It only reads.
-2. **It reads the instructions and the code.** 333 built-in rules check the `SKILL.md` the agent will follow and code in 10 languages for things a skill shouldn't be doing quietly.
+2. **It reads the instructions and the code.** 341 built-in rules check the `SKILL.md` the agent will follow and code in 10 languages for things a skill shouldn't be doing quietly.
 3. **It checks the dependencies.** Known-bad and look-alike packages (`lodahs` posing as `lodash`), plus live lookups in npm audit and the [OSV](https://osv.dev) vulnerability database.
 4. **You get a verdict.** A score from 0 to 100, every finding with its file and line, and an exit code your CI can act on.
 

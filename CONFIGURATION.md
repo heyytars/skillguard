@@ -256,7 +256,7 @@ Prioritize detecting data exfiltration:
 
 ### Threat Categories (v2.0)
 
-skillguard has 305 built-in rules. These five categories are the ones skills most often abuse:
+skillguard has 341 built-in rules. These five categories are the ones skills most often abuse:
 
 | Category | Examples | Default severity (rule count) |
 |----------|----------|------------------|
