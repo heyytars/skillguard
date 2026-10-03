@@ -201,7 +201,8 @@ python3 bench/run.py --corpus   # also fetches and scans the third-party skills
 ```
 
 The runner exits 1 when an attack is missed or an ordinary skill is flagged, so
-CI fails on a regression. See [`bench/README.md`](bench/README.md) for what it
+CI fails on a regression. CI also runs the third-party corpus check on every push.
+See [`bench/README.md`](bench/README.md) for what it
 does not measure, and [`docs/jev-spike.md`](docs/jev-spike.md) for the local
 model that was tried on those three cases.
 

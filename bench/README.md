@@ -31,18 +31,28 @@ problem is solved. They are listed in `RESULTS.md` on every run.
 
 ## Third-party corpora
 
-`--corpus` clones these at pinned commits into `~/.cache/skillguard-bench` and
-scans every skill in them:
+`--corpus` fetches these at **pinned commits** into `~/.cache/skillguard-bench`
+and scans every skill in them:
 
 | Repo | Pinned commit | Why pinned |
 |---|---|---|
-| `anthropics/skills` | `8a1541c4` | Reproducible numbers; a moving `main` makes the README a claim about nothing |
-| `obra/superpowers` | `8ca22dba` | Same |
+| `anthropics/skills` | `8a1541c4a3ff` | Reproducible numbers; a moving `main` makes the README a claim about nothing |
+| `obra/superpowers` | `8ca22dba9a94` | Same |
+
+The pin is genuinely checked out (`git fetch --depth 1 <sha>` then a detached
+checkout), and the commit actually scanned is written into the cache directory.
+If a pin's `git` checkout does not come back as the requested commit, the run
+fails rather than reporting numbers from a different tree.
 
 **They are fetched, never vendored.** `anthropics/skills` carries no licence
 file, so its content is not redistributed here; `obra/superpowers` is MIT but the
 same rule keeps this repository small and the pins honest. Bump a pin
 deliberately, then re-run `--write`.
+
+CI runs `--corpus` on every push, with the corpus directory cached under a key
+derived from the pins in `run.py`. **A failed fetch is a failed run**: a partial
+result (one corpus down) exits 1 instead of quietly reporting `0/15 trusted`,
+because a smaller denominator reads like a clean sweep.
 
 ## Adding a case
 

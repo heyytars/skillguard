@@ -85,25 +85,44 @@ def scan_group(cli: list[str], kind: str) -> list[dict]:
 
 
 def fetch_corpus(repo: str, commit: str) -> Path | None:
+    """Check out the PINNED commit. Cloning the default branch would make the
+    published numbers a claim about whatever main happened to be that day."""
     dest = CACHE / repo.replace("/", "__") / commit[:12]
-    if dest.exists():
+    marker = dest / ".skillguard-bench-head"
+    if marker.exists() and marker.read_text().strip() == commit:
         return dest
     if not shutil.which("git"):
-        print("git not found, skipping corpora", file=sys.stderr)
+        print("git not found, cannot run the corpus check", file=sys.stderr)
         return None
+    if dest.exists():
+        shutil.rmtree(dest, ignore_errors=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    print(f"fetching {repo}@{commit[:12]} ...", file=sys.stderr)
-    proc = subprocess.run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none",
-                           f"https://github.com/{repo}.git", str(dest)],
-                          capture_output=True, text=True)
-    if proc.returncode != 0:
-        print(f"  clone failed: {proc.stderr.strip()[:200]}", file=sys.stderr)
-        return None
-    # Record what was actually tested, even if the pin moves under us.
-    head = subprocess.run(["git", "-C", str(dest), "rev-parse", "HEAD"],
-                          capture_output=True, text=True).stdout.strip()
-    (dest / ".skillguard-bench-head").write_text(head + "\n")
-    return dest
+
+    steps = [
+        ["git", "init", "--quiet", str(dest)],
+        ["git", "-C", str(dest), "remote", "add", "origin", f"https://github.com/{repo}.git"],
+        ["git", "-C", str(dest), "fetch", "--quiet", "--depth", "1", "origin", commit],
+        ["git", "-C", str(dest), "checkout", "--quiet", "--detach", "FETCH_HEAD"],
+    ]
+    for attempt in (1, 2):
+        print(f"fetching {repo}@{commit[:12]} (attempt {attempt}) ...", file=sys.stderr)
+        ok = all(
+            subprocess.run(cmd, capture_output=True, text=True).returncode == 0 for cmd in steps
+        )
+        if not ok:
+            shutil.rmtree(dest, ignore_errors=True)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            continue
+        head = subprocess.run(
+            ["git", "-C", str(dest), "rev-parse", "HEAD"], capture_output=True, text=True
+        ).stdout.strip()
+        if head != commit:
+            print(f"  checked out {head[:12]}, wanted {commit[:12]}", file=sys.stderr)
+            return None
+        marker.write_text(head + "\n")
+        return dest
+    print(f"  could not fetch {repo}@{commit[:12]}", file=sys.stderr)
+    return None
 
 
 def scan_corpora(cli: list[str]) -> dict:
@@ -243,6 +262,17 @@ def main() -> int:
             render(attacks, disguised, benign, context, s, corpora, version)
         )
         print("\nwrote bench/RESULTS.md")
+
+    # Asking for the corpus and not getting it must not look like a pass. A
+    # partial run is worse than none: 0/15 trusted reads like a clean sweep.
+    missing = [repo for repo in CORPORA if not corpora.get(repo)]
+    if args.corpus and missing:
+        print(
+            f"\nCORPUS CHECK INCOMPLETE: could not fetch {', '.join(missing)}. "
+            "The trusted-skill count above covers only what did fetch.",
+            file=sys.stderr,
+        )
+        return 1
     return 1 if s["regressed"] else 0
 
 

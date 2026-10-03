@@ -38,6 +38,15 @@ jobs:
     # goes in the job output so a regression shows up without opening the log.
     - name: Run benchmark
       run: python3 bench/run.py | tee bench-out.txt
+    # Also scans real third-party skills at pinned commits. The cache keeps this
+    # from cloning on every push; the key moves when the pins in bench/run.py do.
+    - name: Cache third-party corpora
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/skillguard-bench
+        key: skillguard-bench-${{ hashFiles('bench/run.py') }}
+    - name: Run benchmark against third-party skills
+      run: python3 bench/run.py --corpus | tee -a bench-out.txt
     - name: Write summary
       if: always()
       run: |
