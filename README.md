@@ -4,6 +4,8 @@
 
 **Scan an AI agent skill before you let it run on your machine.**
 
+[Read the write-up: skillguard, read the skill before your agent does](https://gauravsingh.net/posts/skillguard/)
+
 [![CI](https://github.com/heyytars/skillguard/workflows/CI/badge.svg)](https://github.com/heyytars/skillguard/actions)
 [![Release](https://img.shields.io/github/v/release/heyytars/skillguard)](https://github.com/heyytars/skillguard/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/heyytars/skillguard/issues"
   },
-  "homepage": "https://github.com/heyytars/skillguard#readme",
+  "homepage": "https://gauravsingh.net/posts/skillguard/",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
